@@ -1,0 +1,18 @@
+name: Version Check
+
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - CHANGELOG.md
+      - scripts/check_version.py
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - run: python scripts/check_version.py

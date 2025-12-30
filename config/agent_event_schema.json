@@ -1,0 +1,183 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "AgentEvent",
+    "type": "object",
+    "required": [
+        "timestamp",
+        "run_id",
+        "agent",
+        "event",
+        "status"
+    ],
+    "properties": {
+        "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp marking when the event was emitted."
+        },
+        "run_id": {
+            "type": "string",
+            "description": "Identifier correlating all events emitted during a manager orchestrated run."
+        },
+        "agent": {
+            "type": "string",
+            "description": "Fully qualified agent name (e.g. genesis.sentinel)."
+        },
+        "event": {
+            "type": "string",
+            "description": "Lifecycle stage or action (queued, start, complete, anomaly_detected, dependency_missing, etc.)."
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "skipped",
+                "degraded"
+            ],
+            "description": "High level outcome for the event."
+        },
+        "latency_ms": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Elapsed time in milliseconds for the associated action."
+        },
+        "metrics": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "number"
+            },
+            "description": "Structured numeric metrics captured during the event."
+        },
+        "artifacts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "path"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Artifact category (log, diff, chart, dataset, binary)."
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Workspace relative path to the artifact."
+                    },
+                    "checksum": {
+                        "type": "string",
+                        "description": "Optional SHA256 checksum for verification."
+                    },
+                    "preview": {
+                        "type": "string",
+                        "description": "Human readable summary limited to 256 characters."
+                    }
+                },
+                "additionalProperties": false
+            },
+            "description": "List of produced artifacts referenced by this event."
+        },
+        "related_agents": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Agents whose outputs influenced this event."
+        },
+        "inputs": {
+            "type": "object",
+            "description": "Structured input payload consumed by the agent.",
+            "additionalProperties": true
+        },
+        "outputs": {
+            "type": "object",
+            "description": "Structured output payload produced by the agent.",
+            "additionalProperties": true
+        },
+        "revision": {
+            "type": "string",
+            "description": "Git commit hash or version tag for traceability."
+        },
+        "notes": {
+            "type": "string",
+            "description": "Freeform human readable notes, max 500 characters."
+        },
+        "knowledge_facts": {
+            "type": "array",
+            "description": "Structured facts discovered during the event for automatic knowledge graph updates.",
+            "items": {
+                "type": "object",
+                "required": [
+                    "subject",
+                    "predicate",
+                    "object"
+                ],
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "description": "Subject entity of the fact."
+                    },
+                    "predicate": {
+                        "type": "string",
+                        "description": "Relation connecting subject and object."
+                    },
+                    "object": {
+                        "type": "string",
+                        "description": "Object entity of the fact."
+                    },
+                    "subject_id": {
+                        "type": "string",
+                        "description": "Optional stable identifier for the subject."
+                    },
+                    "object_id": {
+                        "type": "string",
+                        "description": "Optional stable identifier for the object."
+                    },
+                    "subject_description": {
+                        "type": "string",
+                        "description": "Additional context describing the subject."
+                    },
+                    "object_description": {
+                        "type": "string",
+                        "description": "Additional context describing the object."
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "description": "Confidence score between 0 and 1."
+                    },
+                    "source": {
+                        "type": "string",
+                        "description": "Origin of the fact (e.g., tool, URL, user)."
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "description": "Arbitrary metadata for downstream processing.",
+                        "additionalProperties": true
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "knowledge_statements": {
+            "type": "array",
+            "description": "List of textual statements derived from the event suitable for consolidation.",
+            "items": {
+                "type": "string"
+            }
+        },
+        "summary": {
+            "type": "string",
+            "description": "Optional task-level summary reported by the agent."
+        },
+        "metadata": {
+            "type": "object",
+            "description": "Additional metadata associated with the event.",
+            "additionalProperties": true
+        }
+    },
+    "additionalProperties": false
+}

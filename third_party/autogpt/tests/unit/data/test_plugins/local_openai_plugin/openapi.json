@@ -1,0 +1,25 @@
+{
+  "openapi": "3.0.1",
+  "info": {"title": "Local Test Plugin", "version": "1.0"},
+  "paths": {
+    "/hello": {
+      "get": {
+        "operationId": "hello_hello_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response",
+                  "type": "object",
+                  "properties": {"greeting": {"type": "string"}}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

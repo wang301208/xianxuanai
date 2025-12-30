@@ -1,0 +1,3 @@
+max_iters: 100
+time_budget: 10.0
+patience: 20

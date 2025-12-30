@@ -1,0 +1,34 @@
+# Deprecated: prefer using deploy/docker-compose.dev.yml directly.
+# This file is kept for backwards compatibility and simply re-exports the
+# development stack using Compose's `extends` directive.
+
+version: "3.9"
+
+services:
+  neo4j:
+    extends:
+      file: ../docker-compose.dev.yml
+      service: neo4j
+
+  qdrant:
+    extends:
+      file: ../docker-compose.dev.yml
+      service: qdrant
+
+  skill-gateway:
+    extends:
+      file: ../docker-compose.dev.yml
+      service: skill-gateway
+
+  smoke-tests:
+    extends:
+      file: ../docker-compose.dev.yml
+      service: smoke-tests
+
+networks:
+  skills-net:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+  qdrant-data:

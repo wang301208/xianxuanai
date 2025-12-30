@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "agbenchmark"
+version = "0.0.10"
+description = "Benchmarking the performance of agents far and wide, regardless of how they are set up and how they work"
+authors = ["Silen Naihin <silen.naihin@gmail.com>"]
+license = "MIT"
+packages = [{ include = "agbenchmark" }]
+
+[tool.poetry.dependencies]
+python = { workspace = true }
+gspread = ">=5.12.4,<7.0.0"
+oauth2client = ">=4.1.3,<5.0.0"
+pandas = ">=2.0.3,<3.0.0"
+python-dotenv = ">=1.0.0,<2.0.0"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests", "agbenchmark",
+]
+asyncio_mode = "auto"
+markers = [
+    "interface",
+    "code",
+    "memory",
+    "iterate",
+    "adaptability",
+    "safety",
+    "content_gen",
+    "product_advisor"
+]
+filterwarnings = [
+    "ignore::pytest.PytestAssertRewriteWarning",
+    "ignore::matplotlib.MatplotlibDeprecationWarning"
+]
+
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+packages = ["autogpt"]
+extend-exclude = '(/dist|/.venv|/venv|/build|/agent|agbenchmark/challenges)/'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 88
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+skip_glob = [".tox", "__pycache__", "*.pyc", "venv*/*", "reports", "venv", "env", "node_modules", ".env", ".venv", "dist", "agent/*", "agbenchmark/challenges/*"]
+
+[tool.poetry.scripts]
+agbenchmark = "agbenchmark.__main__:cli"

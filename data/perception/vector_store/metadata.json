@@ -1,0 +1,1614 @@
+{
+  "backend": "brute",
+  "dimension": 384,
+  "records": [
+    {
+      "id": "16cb2ac2-a306-4a26-8b19-d3cfe09a9bac",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766070119.7246673,
+        "last_access": 1766070119.7246673,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "d0e82273-cc70-4e31-9bcf-6f013ab884f0",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766070119.7274532,
+        "last_access": 1766070119.7274532,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "50dc753f-83c1-426e-b576-2c500d80a5a3",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766070119.7378619,
+        "last_access": 1766070119.7378619,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "cc921725-77b3-4b38-89eb-f7db5f06b642",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072315.5147462,
+        "last_access": 1766072315.5147462,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "73432a24-f7b3-4180-a767-d484ff0cb2de",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072315.5147462,
+        "last_access": 1766072315.5147462,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "6e21bf60-b965-4a38-a781-a12a4fee38ca",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072315.5242593,
+        "last_access": 1766072315.5242593,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "ae880faf-fc73-4280-bdc4-abdb506c490f",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.45768627524375916,
+          0.5390021204948425,
+          0.5390021800994873,
+          0.45768630504608154
+        ],
+        "source": "task_memory",
+        "created_at": 1766072315.6061876,
+        "last_access": 1766072315.6061876,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "2baf5ab8-c03a-4248-9399-549f9af2e33c",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072315.60773,
+        "last_access": 1766072315.60773,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "521057ca-9ac8-4fa8-b275-5b640e63e95e",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072315.6087573,
+        "last_access": 1766072315.6087573,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "7e87e72e-51c6-412e-ab2f-ea5d639b14b6",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072315.6994894,
+        "last_access": 1766072315.6994894,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "a428768a-4df3-4182-b6e2-87ab33f57572",
+      "text": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 2,
+        "subject": "whole_brain:image:2",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072315.7511613,
+        "last_access": 1766072315.7511613,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "67bb2d10-3ff2-4b31-aec1-b1f60782073c",
+      "text": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 3,
+        "subject": "whole_brain:image:3",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072315.7929738,
+        "last_access": 1766072315.7929738,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "482eaba6-e53f-4cf0-b5a8-70c45f2927d1",
+      "text": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 4,
+        "subject": "whole_brain:image:4",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072315.83936,
+        "last_access": 1766072315.83936,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "31eb8aef-88d9-46e2-90cb-de2adec6ad45",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+        "modality": "vision",
+        "labels": [
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.7071067690849304,
+          0.7071067690849304
+        ],
+        "source": "task_memory",
+        "created_at": 1766072315.9084718,
+        "last_access": 1766072315.9084718,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "6d55b8fd-e983-431c-842e-f7c7426a1cc8",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072487.0943022,
+        "last_access": 1766072487.0943022,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "af35553e-e152-47d0-a87d-90bcf5462d7d",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072487.096872,
+        "last_access": 1766072487.096872,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "7a1d97d7-0b7b-45eb-9f36-b85cb0830116",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072487.0988808,
+        "last_access": 1766072487.0988808,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "d2df87e2-23fb-4bca-a9a7-cefcbd1ab3dd",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.45768627524375916,
+          0.5390021204948425,
+          0.5390021800994873,
+          0.45768630504608154
+        ],
+        "source": "task_memory",
+        "created_at": 1766072487.1961606,
+        "last_access": 1766072487.1961606,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "a3fccbe0-d8d8-40eb-ab5d-ed07f75e2625",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072487.1981962,
+        "last_access": 1766072487.1981962,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "edf0f248-82a6-4637-9089-b6abdc46c64d",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766072487.200319,
+        "last_access": 1766072487.200319,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "3bea62dc-27e1-4495-ad8e-23d399ac576a",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072487.3008053,
+        "last_access": 1766072487.3008053,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "4bd2d554-298e-460c-be54-636896efe529",
+      "text": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 2,
+        "subject": "whole_brain:image:2",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072487.3672018,
+        "last_access": 1766072487.3672018,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "7be9ea2b-a034-4789-b4f1-f342705e8544",
+      "text": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 3,
+        "subject": "whole_brain:image:3",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072487.4137075,
+        "last_access": 1766072487.4137075,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "3c62c76a-54c9-49a1-b487-a3773258ff83",
+      "text": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 4,
+        "subject": "whole_brain:image:4",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766072487.4600554,
+        "last_access": 1766072487.4600554,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "02ca8817-2deb-4863-b4f8-1c22634ad865",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+        "modality": "vision",
+        "labels": [
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.7071067690849304,
+          0.7071067690849304
+        ],
+        "source": "task_memory",
+        "created_at": 1766072487.5314624,
+        "last_access": 1766072487.5314624,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "661733da-4fd3-49e9-a0da-9ae73b8dfcf1",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766074168.4183152,
+        "last_access": 1766074168.4183152,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "8ca3f885-fcce-4825-8eb6-b0e4a6683f69",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766074168.420823,
+        "last_access": 1766074168.420823,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "b48b3216-4997-4542-9c97-3b8181f051a1",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766074168.4248326,
+        "last_access": 1766074168.4248326,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "ac0f3082-c608-4961-b5ae-d27c0210c54e",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.45768627524375916,
+          0.5390021204948425,
+          0.5390021800994873,
+          0.45768630504608154
+        ],
+        "source": "task_memory",
+        "created_at": 1766074168.5138953,
+        "last_access": 1766074168.5138953,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "c5482417-a9d6-4226-a7a9-c6a470c22744",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766074168.5174744,
+        "last_access": 1766074168.5174744,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "9057ff80-d097-448c-9825-6788384ddb2a",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766074168.5199878,
+        "last_access": 1766074168.5199878,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "825edb32-9d86-4b53-8759-62a392a0ce01",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766074168.6131077,
+        "last_access": 1766074168.6131077,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "02b1427f-37b8-4aed-ade9-fb73ec3cabb5",
+      "text": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 2,
+        "subject": "whole_brain:image:2",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766074168.6688027,
+        "last_access": 1766074168.6688027,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "fc76ca01-e5ba-4b55-9442-d266968afcf8",
+      "text": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 3,
+        "subject": "whole_brain:image:3",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766074168.729442,
+        "last_access": 1766074168.729442,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "5977c5b0-dd2e-4dfb-9e20-c83d94b65aad",
+      "text": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 4,
+        "subject": "whole_brain:image:4",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766074168.7797678,
+        "last_access": 1766074168.7797678,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "38af4470-08bf-46cb-a4e6-b257c4601dfa",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+        "modality": "vision",
+        "labels": [
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.7071067690849304,
+          0.7071067690849304
+        ],
+        "source": "task_memory",
+        "created_at": 1766074168.8640976,
+        "last_access": 1766074168.8640976,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "f777b508-36ca-4c86-aa00-854d57715393",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766075009.296745,
+        "last_access": 1766075009.296745,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "b88cb917-52df-4fa8-bdd8-dbfeb202faa3",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766075009.2987447,
+        "last_access": 1766075009.2987447,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "8940192c-9b8e-46ca-9ce3-0bb106fe8e2e",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766075009.3017454,
+        "last_access": 1766075009.3017454,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "bf5c8e7a-808e-4de6-9d94-cfbe280552ca",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.45768627524375916,
+          0.5390021204948425,
+          0.5390021800994873,
+          0.45768630504608154
+        ],
+        "source": "task_memory",
+        "created_at": 1766075009.383816,
+        "last_access": 1766075009.383816,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "93c3fb8f-b74a-4908-bad1-dfa745b175fb",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766075009.3858473,
+        "last_access": 1766075009.3858473,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "985364b9-18d6-435c-b2ac-013b7c73eb38",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766075009.3893552,
+        "last_access": 1766075009.3893552,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "4cd34322-b738-4180-b8b6-2ebee54a37b3",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766075009.4733355,
+        "last_access": 1766075009.4733355,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "3bfdecfd-2c54-47b6-bc2b-2a8f8bd3ebd1",
+      "text": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 2,
+        "subject": "whole_brain:image:2",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766075009.517298,
+        "last_access": 1766075009.517298,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "cd088ad2-bbf7-4a27-aada-4596f5f92699",
+      "text": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 3,
+        "subject": "whole_brain:image:3",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766075009.5649815,
+        "last_access": 1766075009.5649815,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "bf72aaa5-cb76-4b3f-a34b-77ac46390d74",
+      "text": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 4,
+        "subject": "whole_brain:image:4",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766075009.6115997,
+        "last_access": 1766075009.6115997,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "abc9b4f5-f009-4dab-b721-f5ee687c7d5c",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+        "modality": "vision",
+        "labels": [
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.7071067690849304,
+          0.7071067690849304
+        ],
+        "source": "task_memory",
+        "created_at": 1766075009.6977782,
+        "last_access": 1766075009.6977782,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251218"
+      }
+    },
+    {
+      "id": "0b394585-472b-473c-bba6-0b990ff419ff",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766257589.3226097,
+        "last_access": 1766257589.3226097,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "d4853a52-e670-45b2-9644-1805e5edd9d4",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766257589.3246555,
+        "last_access": 1766257589.3246555,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "af7d53bb-64ad-4e00-9267-547e82c6f949",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with warm timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "low_timbre"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766257589.3246555,
+        "last_access": 1766257589.3246555,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "52993ea6-10f3-47fa-842d-47da59d0cd2e",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.14, contrast=0.17).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.45768627524375916,
+          0.5390021204948425,
+          0.5390021800994873,
+          0.45768630504608154
+        ],
+        "source": "task_memory",
+        "created_at": 1766257589.5158195,
+        "last_access": 1766257589.5158195,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "b1e310e3-6012-4c70-8e7a-82368af92c71",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766257589.5168197,
+        "last_access": 1766257589.5168197,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "1800e3a2-f3d7-4c13-bd18-5b1d76b6a318",
+      "text": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Audio whole_brain:audio:1: Audio segment is quiet_audio, steady_audio with mid timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1766257589.5241652,
+        "last_access": 1766257589.5241652,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "62c8dd2d-96ae-4e5c-8f83-d48579320c33",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766257589.7211,
+        "last_access": 1766257589.7211,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "26fd3b70-816e-440c-8290-8ed0cc008e88",
+      "text": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:2: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 2,
+        "subject": "whole_brain:image:2",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766257589.77617,
+        "last_access": 1766257589.77617,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "c736f0a2-d00b-46ae-8b21-7cdf832bf7ac",
+      "text": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:3: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 3,
+        "subject": "whole_brain:image:3",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766257589.844029,
+        "last_access": 1766257589.844029,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "c8199825-7411-48dc-83de-b180b4104956",
+      "text": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:4: Visual scene features structured layout, soft lighting (edge_energy=0.00, contrast=0.00).",
+        "modality": "vision",
+        "labels": [
+          "smooth_surface",
+          "low_contrast",
+          "structured_scene"
+        ],
+        "cycle": 4,
+        "subject": "whole_brain:image:4",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "source": "task_memory",
+        "created_at": 1766257589.889846,
+        "last_access": 1766257589.889846,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    },
+    {
+      "id": "2cf45012-ecf9-4c7e-96c1-ba22b3c36d69",
+      "text": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+      "metadata": {
+        "task_id": "whole_brain:perception",
+        "summary": "Vision whole_brain:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+        "modality": "vision",
+        "labels": [
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "whole_brain:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.7071067690849304,
+          0.7071067690849304
+        ],
+        "source": "task_memory",
+        "created_at": 1766257590.0630753,
+        "last_access": 1766257590.0630753,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20251220"
+      }
+    }
+  ]
+}

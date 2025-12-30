@@ -1,0 +1,12 @@
+﻿monitoring:
+  api:
+    service_name: monitoring-api
+    default_limit: 100
+    cache_ttl_seconds: 5
+    enabled: true
+    registration:
+      host: 127.0.0.1
+      port: 9001
+      scheme: http
+      tags: [metrics]
+      ttl_seconds: 0

@@ -1,0 +1,24 @@
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: skill-gateway
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+    - host: skill-gateway.example.com
+      http:
+        paths:
+          - path: /skill-gateway(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: skill-gateway
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - skill-gateway.example.com
+      secretName: skill-gateway-tls

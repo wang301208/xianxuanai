@@ -1,0 +1,6 @@
+# Configuration for DynamicNetwork structure adaptation
+max_layers: 5
+layer_size: 16
+growth_trigger: 0.01
+shrink_trigger: -0.1
+patience: 1

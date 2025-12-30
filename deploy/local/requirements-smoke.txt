@@ -1,0 +1,6 @@
+neo4j==5.23.0
+qdrant-client==1.10.1
+requests==2.32.3
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+numpy==1.26.4

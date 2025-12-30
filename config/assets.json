@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "notes": "Fill in source.url / sha256 for downloadable assets. 'optional: true' means missing assets only warn by default.",
+  "assets": [
+    {
+      "id": "brainsim_decision_policy_zip",
+      "groups": ["brainsim", "BrainSimulationSystem", "rl"],
+      "path": "BrainSimulationSystem/models/rl/decision_policy.zip",
+      "optional": true,
+      "sha256": "",
+      "source": {
+        "type": "url",
+        "url": "",
+        "headers": {},
+        "size_bytes": null
+      },
+      "instructions": "Provide a URL to a pretrained policy zip (source.url), or generate it via: python scripts/train_decision_rl.py"
+    },
+    {
+      "id": "brainsim_planner_policy_zip",
+      "groups": ["brainsim", "BrainSimulationSystem", "rl"],
+      "path": "BrainSimulationSystem/models/rl/planner_policy.zip",
+      "optional": true,
+      "sha256": "",
+      "source": {
+        "type": "url",
+        "url": "",
+        "headers": {},
+        "size_bytes": null
+      },
+      "instructions": "Provide a URL to a pretrained policy zip (source.url), or generate it via: python scripts/train_planner_rl.py"
+    },
+    {
+      "id": "brainsim_default_checkpoint",
+      "groups": ["brainsim", "BrainSimulationSystem", "checkpoint"],
+      "path": "BrainSimulationSystem/checkpoints/default.ckpt",
+      "optional": true,
+      "sha256": "",
+      "source": {
+        "type": "url",
+        "url": "",
+        "headers": {},
+        "size_bytes": null
+      },
+      "instructions": "Provide a URL to a checkpoint file (source.url) or place it at BrainSimulationSystem/checkpoints/default.ckpt"
+    },
+    {
+      "id": "brainsim_production_checkpoint",
+      "groups": ["brainsim", "BrainSimulationSystem", "checkpoint"],
+      "path": "BrainSimulationSystem/checkpoints/production.ckpt",
+      "optional": true,
+      "sha256": "",
+      "source": {
+        "type": "url",
+        "url": "",
+        "headers": {},
+        "size_bytes": null
+      },
+      "instructions": "Provide a URL to a checkpoint file (source.url) or place it at BrainSimulationSystem/checkpoints/production.ckpt"
+    },
+    {
+      "id": "allen_human_h5ad",
+      "groups": ["brainsim", "dataset", "transcriptomics"],
+      "path": "data/allen_human.h5ad",
+      "optional": true,
+      "sha256": "",
+      "source": {
+        "type": "url",
+        "url": "",
+        "headers": {},
+        "size_bytes": null
+      },
+      "instructions": "Provide a URL to the dataset (source.url) or place it at data/allen_human.h5ad"
+    },
+    {
+      "id": "allen_mouse_h5ad",
+      "groups": ["brainsim", "dataset", "transcriptomics"],
+      "path": "data/allen_mouse.h5ad",
+      "optional": true,
+      "sha256": "",
+      "source": {
+        "type": "url",
+        "url": "",
+        "headers": {},
+        "size_bytes": null
+      },
+      "instructions": "Provide a URL to the dataset (source.url) or place it at data/allen_mouse.h5ad"
+    }
+  ]
+}
+

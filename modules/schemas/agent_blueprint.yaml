@@ -1,0 +1,40 @@
+type: object
+required:
+  - role_name
+  - core_prompt
+  - authorized_tools
+  - subscribed_topics
+properties:
+  role_name:
+    type: string
+    description: Descriptive name of the agent's role within the organization.
+  core_prompt:
+    type: string
+    description: Primary instruction set guiding the agent's behaviour.
+  authorized_tools:
+    type: array
+    description: List of tool identifiers the agent is permitted to use.
+    items:
+      type: string
+  subscribed_topics:
+    type: array
+    description: Message bus topics the agent listens to.
+    items:
+      type: string
+  use_transformer_brain:
+    type: boolean
+    description: Enable the optional Transformer-based brain module.
+    default: false
+  brain_backend:
+    type: string
+    description: Select the cognitive backend used by the agent (llm, transformer, whole_brain, brain_simulation).
+    enum: [llm, transformer, whole_brain, brain_simulation]
+  use_knowledge_base:
+    type: boolean
+    description: Attach a unified knowledge base to the agent.
+    default: false
+  use_decision_engine:
+    type: boolean
+    description: Initialize the decision engine for action selection.
+    default: false
+additionalProperties: false

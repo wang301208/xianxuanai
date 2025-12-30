@@ -1,0 +1,12 @@
+﻿gateway:
+  service_name: api-gateway
+  host: 0.0.0.0
+  port: 8080
+  default_timeout_seconds: 10
+  routes:
+    - path: /monitoring
+      target_service: monitoring-api
+      methods: [GET]
+      timeout_seconds: 5
+      cache_ttl_seconds: 5
+      rewrite_path: /

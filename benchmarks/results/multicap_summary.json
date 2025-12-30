@@ -1,0 +1,21 @@
+{
+  "summary": {
+    "collected": 2,
+    "passed": 2,
+    "total": 2
+  },
+  "tests": {
+    "benchmarks/test_creativity_benchmark.py::test_creativity_feedback": {
+      "call_duration": 0.0002983960002893582,
+      "outcome": "passed",
+      "setup_duration": 0.0006458349998865742,
+      "teardown_duration": 0.0002368979999118892
+    },
+    "benchmarks/tests/test_cross_domain.py::test_cross_domain_benchmark_adapts_strategy": {
+      "call_duration": 0.00022921100025996566,
+      "outcome": "passed",
+      "setup_duration": 0.0003040639999198902,
+      "teardown_duration": 0.00028637200011871755
+    }
+  }
+}

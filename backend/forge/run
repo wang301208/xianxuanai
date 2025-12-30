@@ -1,0 +1,17 @@
+#!/bin/bash
+
+kill $(lsof -t -i :8000)
+
+if [ ! -f .env ]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+  ENV_TEMPLATE="$REPO_ROOT/config/.env.template"
+
+  if [ -f "$ENV_TEMPLATE" ]; then
+    cp "$ENV_TEMPLATE" .env
+  else
+    echo "No env template found at $ENV_TEMPLATE; create .env manually." >&2
+  fi
+  echo "Please add your api keys to the .env file."
+fi
+poetry run python -m forge

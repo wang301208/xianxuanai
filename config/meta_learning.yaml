@@ -1,0 +1,12 @@
+algorithm: maml
+shots: 2
+ways: 2
+tasks:
+  - name: task1
+    dataset: data/meta_learning/task1.csv
+  - name: task2
+    dataset: data/meta_learning/task2.csv
+adapt_steps: 5
+inner_lr: 0.01
+meta_lr: 0.001
+epochs: 3

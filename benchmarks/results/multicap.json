@@ -1,0 +1,101 @@
+{
+  "collectors": [
+    {
+      "nodeid": "",
+      "outcome": "passed",
+      "result": [
+        {
+          "nodeid": "benchmarks/test_creativity_benchmark.py",
+          "type": "Module"
+        },
+        {
+          "nodeid": "benchmarks/tests/test_cross_domain.py",
+          "type": "Module"
+        }
+      ]
+    },
+    {
+      "nodeid": "benchmarks/test_creativity_benchmark.py",
+      "outcome": "passed",
+      "result": [
+        {
+          "lineno": 35,
+          "nodeid": "benchmarks/test_creativity_benchmark.py::test_creativity_feedback",
+          "type": "Function"
+        }
+      ]
+    },
+    {
+      "nodeid": "benchmarks/tests/test_cross_domain.py",
+      "outcome": "passed",
+      "result": [
+        {
+          "lineno": 10,
+          "nodeid": "benchmarks/tests/test_cross_domain.py::test_cross_domain_benchmark_adapts_strategy",
+          "type": "Function"
+        }
+      ]
+    }
+  ],
+  "created": 1760871769.6887977,
+  "duration": 0.07742595672607422,
+  "environment": {},
+  "exitcode": 0,
+  "root": "autoSuper-Artificial-Intelligence",
+  "summary": {
+    "collected": 2,
+    "passed": 2,
+    "total": 2
+  },
+  "tests": [
+    {
+      "call": {
+        "duration": 0.0002983960002893582,
+        "outcome": "passed"
+      },
+      "keywords": [
+        "test_creativity_feedback",
+        "test_creativity_benchmark.py",
+        "benchmarks",
+        "autoSuper-Artificial-Intelligence",
+        ""
+      ],
+      "lineno": 35,
+      "nodeid": "benchmarks/test_creativity_benchmark.py::test_creativity_feedback",
+      "outcome": "passed",
+      "setup": {
+        "duration": 0.0006458349998865742,
+        "outcome": "passed"
+      },
+      "teardown": {
+        "duration": 0.0002368979999118892,
+        "outcome": "passed"
+      }
+    },
+    {
+      "call": {
+        "duration": 0.00022921100025996566,
+        "outcome": "passed"
+      },
+      "keywords": [
+        "test_cross_domain_benchmark_adapts_strategy",
+        "test_cross_domain.py",
+        "tests",
+        "benchmarks",
+        "autoSuper-Artificial-Intelligence",
+        ""
+      ],
+      "lineno": 10,
+      "nodeid": "benchmarks/tests/test_cross_domain.py::test_cross_domain_benchmark_adapts_strategy",
+      "outcome": "passed",
+      "setup": {
+        "duration": 0.0003040639999198902,
+        "outcome": "passed"
+      },
+      "teardown": {
+        "duration": 0.00028637200011871755,
+        "outcome": "passed"
+      }
+    }
+  ]
+}

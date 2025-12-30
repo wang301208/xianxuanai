@@ -1,0 +1,4 @@
+encoders:
+  text: sentence-transformers/all-MiniLM-L6-v2
+  image: openai/clip-vit-base-patch32
+  graph: glove

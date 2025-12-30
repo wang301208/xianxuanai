@@ -1,0 +1,122 @@
+
+name: Container Release
+
+on:
+  push:
+    branches: [master, main, development]
+    paths:
+      - "backend/autogpt/**"
+      - "services/skill_gateway/**"
+      - "deploy/docker-compose.*"
+      - "deploy/local/skill-gateway.Dockerfile"
+      - ".github/workflows/container-release.yml"
+  pull_request:
+    paths:
+      - "backend/autogpt/**"
+      - "services/skill_gateway/**"
+      - "deploy/docker-compose.*"
+      - "deploy/local/skill-gateway.Dockerfile"
+      - ".github/workflows/container-release.yml"
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - id: autogpt-dev
+            component: autogpt
+            display_name: AutoGPT (dev)
+            context: backend/autogpt
+            dockerfile: backend/autogpt/Dockerfile
+            build_args: |
+              BUILD_TYPE=dev
+            primary_tag: dev
+          - id: autogpt-release
+            component: autogpt
+            display_name: AutoGPT (release)
+            context: backend/autogpt
+            dockerfile: backend/autogpt/Dockerfile
+            build_args: |
+              BUILD_TYPE=release
+            primary_tag: latest
+          - id: skill-gateway
+            component: skill-gateway
+            display_name: Skill Gateway
+            context: .
+            dockerfile: deploy/local/skill-gateway.Dockerfile
+            build_args: ""
+            primary_tag: latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute metadata
+        id: meta
+        shell: bash
+        run: |
+          short_sha="${GITHUB_SHA::12}"
+          echo "short_sha=${short_sha}" >> "${GITHUB_OUTPUT}"
+          image="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/${{ matrix.component }}"
+          echo "image=${image,,}" >> "${GITHUB_OUTPUT}"
+      - name: Build container image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          build-args: ${{ matrix.build_args }}
+          push: ${{ github.event_name == 'push' }}
+          provenance: true
+          sbom: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ matrix.primary_tag }}
+            ${{ steps.meta.outputs.image }}:sha-${{ steps.meta.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.id }}
+          cache-to: type=gha,scope=${{ matrix.id }},mode=max
+          platforms: linux/amd64
+
+      - name: Generate SBOM
+        if: github.event_name == 'push'
+        id: sbom
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          output-file: sbom-${{ matrix.component }}-${{ matrix.primary_tag }}.spdx.json
+          artifact-name: sbom-${{ matrix.id }}
+
+      - name: Install Cosign
+        if: github.event_name == 'push'
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Sign SBOM attestation
+        if: github.event_name == 'push'
+        env:
+          COSIGN_YES: "true"
+        run: |
+          cosign attest \
+            --predicate ${{ steps.sbom.outputs.sbom }} \
+            --type spdxjson \
+            ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}

@@ -1,0 +1,13 @@
+roles:
+  human_architect:
+    permissions:
+      - approve_pull_requests
+      - define_governance
+  developer:
+    permissions:
+      - propose_changes
+      - respond_to_feedback
+  ci_agent:
+    permissions:
+      - run_tests
+      - report_status

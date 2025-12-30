@@ -1,0 +1,7 @@
+﻿logging:
+  level: INFO
+  json: false
+  log_dir: null
+  propagate: false
+  capture_warnings: true
+  app_name: autoai

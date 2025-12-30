@@ -1,0 +1,108 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skill-gateway-config
+data:
+  GATEWAY_ALLOWED_TENANTS: "team-alpha,team-beta"
+  GATEWAY_API_KEY_HEADER: "Authorization"
+  GATEWAY_TENANT_HEADER: "X-Tenant-ID"
+  GATEWAY_REQUIRE_AUTH: "true"
+  GATEWAY_REQUIRE_TENANT_HEADER: "true"
+  GATEWAY_READINESS_TARGETS: "http://qdrant:6333/healthz,http://neo4j:7474/"
+  GATEWAY_READINESS_TIMEOUT: "3.0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: skill-gateway-secrets
+type: Opaque
+stringData:
+  GATEWAY_API_KEY: "REPLACE_WITH_SECURE_RANDOM_VALUE"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skill-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: skill-gateway
+  template:
+    metadata:
+      labels:
+        app: skill-gateway
+    spec:
+      containers:
+        - name: skill-gateway
+          image: ghcr.io/your-org/skill-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8300
+          env:
+            - name: PORT
+              value: "8300"
+            - name: SKILL_GATEWAY_PORT
+              value: "8300"
+            - name: GATEWAY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: skill-gateway-secrets
+                  key: GATEWAY_API_KEY
+          envFrom:
+            - configMapRef:
+                name: skill-gateway-config
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skill-gateway
+spec:
+  selector:
+    app: skill-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8300
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: skill-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: skill-gateway
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65

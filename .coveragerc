@@ -1,0 +1,24 @@
+[run]
+branch = True
+source =
+    BrainSimulationSystem
+    backend
+    algorithms
+    capability
+    modules
+    autogpts
+    scripts
+omit =
+    */__main__.py
+    */tests/*
+    tests/**
+    */__pycache__/*
+    */migrations/*
+
+[report]
+show_missing = True
+skip_covered = True
+fail_under = 70
+
+[html]
+directory = coverage_html

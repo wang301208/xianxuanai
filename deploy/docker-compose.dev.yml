@@ -1,0 +1,132 @@
+version: "3.9"
+
+x-healthcheck-defaults: &healthcheck_defaults
+  interval: 30s
+  timeout: 5s
+  retries: 5
+  start_period: 10s
+
+services:
+  neo4j:
+    image: ${NEO4J_IMAGE:-neo4j:5.21.0}
+    container_name: ${NEO4J_CONTAINER_NAME:-neo4j-dev}
+    restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/pleaseletmein}
+      NEO4J_server_memory_pagecache_size: ${NEO4J_PAGECACHE_SIZE:-1G}
+      NEO4J_server_memory_heap_initial__size: ${NEO4J_HEAP_INITIAL:-512m}
+      NEO4J_server_memory_heap_max__size: ${NEO4J_HEAP_MAX:-512m}
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    volumes:
+      - neo4j-data:/data
+    networks:
+      - skills-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474/ || exit 1"]
+      <<: *healthcheck_defaults
+
+  qdrant:
+    image: ${QDRANT_IMAGE:-qdrant/qdrant:v1.10.1}
+    container_name: ${QDRANT_CONTAINER_NAME:-qdrant-dev}
+    restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: ${QDRANT_GRPC_PORT:-6334}
+      QDRANT__SERVICE__HTTP_PORT: ${QDRANT_HTTP_PORT:-6333}
+    ports:
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - skills-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:6333/healthz || exit 1"]
+      <<: *healthcheck_defaults
+
+  skill-gateway:
+    build:
+      context: ..
+      dockerfile: deploy/local/skill-gateway.Dockerfile
+    image: ${SKILL_GATEWAY_IMAGE:-skill-gateway:dev}
+    container_name: ${SKILL_GATEWAY_CONTAINER_NAME:-skill-gateway-dev}
+    restart: unless-stopped
+    env_file:
+      - ./env/.env.dev
+    environment:
+      PORT: ${SKILL_GATEWAY_PORT:-8300}
+      GATEWAY_REQUIRE_AUTH: ${GATEWAY_REQUIRE_AUTH:-true}
+    ports:
+      - "${SKILL_GATEWAY_PORT:-8300}:8300"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    networks:
+      - skills-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8300') + '/healthz')\"",
+        ]
+      <<: *healthcheck_defaults
+
+  autogpt-agent:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ${AUTOGPT_IMAGE:-autogpt}:${AUTOGPT_TAG:-dev}
+    container_name: ${AUTOGPT_CONTAINER_NAME:-autogpt-dev}
+    restart: unless-stopped
+    depends_on:
+      skill-gateway:
+        condition: service_healthy
+    env_file:
+      - ./env/.env.dev
+    environment:
+      SKILL_RPC_BASE_URL: ${SKILL_RPC_BASE_URL:-http://skill-gateway:8300}
+      PORT: ${AUTOGPT_PORT:-8000}
+    volumes:
+      - autogpt-data:/app/data
+    ports:
+      - "${AUTOGPT_PORT:-8000}:8000"
+    networks:
+      - skills-net
+
+  smoke-tests:
+    image: python:3.11-slim
+    profiles: ["tests"]
+    restart: "no"
+    depends_on:
+      skill-gateway:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace
+    env_file:
+      - ./env/.env.dev
+    command: >
+      bash -lc "pip install --no-cache-dir -r deploy/local/requirements-smoke.txt &&
+      python scripts/rpc_smoke_test.py"
+    networks:
+      - skills-net
+
+networks:
+  skills-net:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+  qdrant-data:
+  autogpt-data:

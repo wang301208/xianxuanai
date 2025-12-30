@@ -1,0 +1,79 @@
+tasks:
+  navigation_basic:
+    grid_size: [6, 6]
+    start: [0, 0]
+    goal: [5, 5]
+    obstacles:
+      - [2, 2]
+      - [2, 3]
+      - [3, 2]
+    subtasks:
+      - name: reach_checkpoint
+        target: [3, 4]
+        reward: 0.3
+        action: interact
+        tolerance: 0
+    plan:
+      - analyze_route
+      - navigate_corridor
+      - confirm_arrival
+    max_steps: 40
+    step_cost: -0.01
+    collision_cost: -0.05
+    goal_reward: 1.0
+
+  manipulation_pickplace:
+    grid_size: [5, 5]
+    start: [0, 4]
+    goal: [4, 0]
+    obstacles:
+      - [1, 2]
+      - [2, 2]
+    subtasks:
+      - name: acquire_tool
+        target: [2, 4]
+        reward: 0.25
+        action: interact
+      - name: pick_object
+        target: [2, 1]
+        reward: 0.35
+        action: interact
+      - name: place_object
+        target: [4, 0]
+        reward: 0.4
+        action: interact
+    plan:
+      - fetch_tool
+      - pick_payload
+      - deliver_payload
+    max_steps: 45
+    drift: 0.1
+    goal_reward: 1.1
+
+  inspection_patrol:
+    grid_size: [7, 4]
+    start: [0, 1]
+    goal: [6, 2]
+    action_set: ["up", "down", "left", "right", "interact", "wait"]
+    obstacles:
+      - [1, 0]
+      - [1, 1]
+      - [3, 2]
+      - [4, 1]
+    subtasks:
+      - name: scan_panel
+        target: [2, 1]
+        reward: 0.2
+        action: interact
+      - name: diagnose_issue
+        target: [4, 2]
+        reward: 0.3
+        action: interact
+    plan:
+      - approach_panel
+      - run_diagnostics
+      - report_status
+    max_steps: 50
+    step_cost: -0.008
+    collision_cost: -0.04
+    goal_reward: 1.05

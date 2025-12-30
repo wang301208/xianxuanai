@@ -1,0 +1,18 @@
+#!/bin/sh
+
+kill $(lsof -t -i :8000)
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ENV_TEMPLATE="$REPO_ROOT/config/.env.template"
+
+if [ ! -f .env ] && [ -z "$OPENAI_API_KEY" ]; then
+  if [ -f "$ENV_TEMPLATE" ]; then
+    cp "$ENV_TEMPLATE" .env
+    echo "Please add your api keys to the .env file." >&2
+  else
+    echo "No env template found at $ENV_TEMPLATE; create .env manually." >&2
+  fi
+  # exit 1
+fi
+poetry run serve --debug

@@ -1,0 +1,136 @@
+# Enhanced Brain Simulation Configuration
+
+# Cortical Column Configuration
+cortical_column:
+  total_neurons: 1000
+  layer_distribution:
+    L1: 0.05    # 5% - Molecular layer
+    L2_3: 0.30  # 30% - Granular layers
+    L4: 0.20    # 20% - Internal granular
+    L5: 0.25    # 25% - Internal pyramidal
+    L6: 0.20    # 20% - Multiform layer
+  
+  neuron_types:
+    excitatory_ratio: 0.8
+    inhibitory_ratio: 0.2
+  
+  connectivity:
+    local_connection_probability: 0.1
+    inter_layer_probability: 0.05
+    synaptic_delay_range: [1.0, 5.0]  # ms
+  
+  thalamic_input:
+    size: 100
+    baseline_rate: 10.0  # Hz
+    burst_probability: 0.15
+    connection_probability: 0.3
+  
+  plasticity:
+    stp_enabled: true
+    stp_tau_rec: 800.0  # ms
+    stp_tau_fac: 50.0   # ms
+    stp_U: 0.5
+    
+    stdp_enabled: true
+    stdp_tau_plus: 20.0  # ms
+    stdp_tau_minus: 20.0 # ms
+    stdp_A_plus: 0.01
+    stdp_A_minus: 0.012
+  
+  validation:
+    brian2_enabled: false
+    validation_duration: 100.0  # ms
+
+# Hippocampus-PFC Memory Loop Configuration
+memory_loop:
+  hippocampus:
+    ca3:
+      size: 500
+      sparsity: 0.03
+      recurrent_strength: 0.8
+      pattern_separation_threshold: 0.3
+    
+    ca1:
+      size: 400
+      ca3_ca1_strength: 0.6
+      place_field_size: 0.2
+      theta_frequency: 8.0  # Hz
+    
+    dentate_gyrus:
+      size: 2000
+      sparsity: 0.02
+      neurogenesis_rate: 0.001
+  
+  prefrontal_cortex:
+    size: 200
+    working_memory_capacity: 7
+    attention_threshold: 0.4
+    executive_control_strength: 0.7
+  
+  consolidation:
+    rate: 0.002
+    sleep_replay_probability: 0.15
+    consolidation_threshold: 0.5
+    forgetting_rate: 0.0001
+  
+  validation:
+    nengo_enabled: false
+    bindsnet_enabled: false
+
+# Memory-Guided Decision Making Configuration
+decision_system:
+  memory_integration:
+    memory_weight: 0.5
+    novelty_bonus: 0.3
+    uncertainty_penalty: 0.2
+    confidence_threshold: 0.6
+  
+  working_memory:
+    capacity: 5
+    decay_rate: 0.1
+    refresh_threshold: 0.3
+  
+  reinforcement_learning:
+    learning_rate: 0.02
+    discount_factor: 0.9
+    exploration_rate: 0.1
+    exploration_decay: 0.995
+  
+  decision_criteria:
+    risk_tolerance: 0.5
+    time_pressure_factor: 0.8
+    social_influence_weight: 0.3
+
+# Simulation Parameters
+simulation:
+  time_step: 1.0  # ms
+  total_duration: 1000.0  # ms
+  recording_interval: 10.0  # ms
+  
+  parallel_processing:
+    enabled: true
+    num_processes: 4
+  
+  output:
+    save_results: true
+    output_directory: "results"
+    plot_results: true
+    save_plots: true
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "brain_simulation.log"
+  console_output: true
+  detailed_timing: false
+
+# Hardware Configuration
+hardware:
+  use_gpu: false
+  gpu_device: 0
+  memory_limit_gb: 8
+  
+  neuromorphic:
+    loihi_available: false
+    spinnaker_available: false
+    brainscales_available: false
