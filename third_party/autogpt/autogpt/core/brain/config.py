@@ -20,6 +20,24 @@ class BrainBackend(str, Enum):
     WHOLE_BRAIN = "whole_brain"
     BRAIN_SIMULATION = "brain_simulation"
 
+    def structured_config_attr(self) -> str | None:
+        """Return the config attribute used by structured backends.
+
+        When adding a new structured backend, update this mapping and register the
+        backend in the brain backend factory.
+        """
+
+        if self == BrainBackend.WHOLE_BRAIN:
+            return "whole_brain"
+        if self == BrainBackend.BRAIN_SIMULATION:
+            return "brain_simulation"
+        return None
+
+    def is_structured(self) -> bool:
+        """True when the backend is served via the structured brain adapter."""
+
+        return self.structured_config_attr() is not None
+
 
 class TransformerBrainConfig(SystemConfiguration):
     """Configuration options for the internal transformer brain."""
@@ -371,12 +389,42 @@ class WholeBrainConfig(SystemConfiguration):
             "max_cache_size": self.max_cache_size,
         }
 
+    def apply_to_backend(self, backend: Any) -> None:
+        """Best-effort runtime update for an existing WholeBrain backend."""
+
+        brain_kwargs = self.to_simulation_kwargs()
+        runtime = brain_kwargs.get("config")
+        update = getattr(backend, "update_config", None)
+        if runtime is not None and callable(update):
+            try:
+                update(runtime)
+            except TypeError:
+                try:
+                    update(config=runtime)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+        for attr in (
+            "neuromorphic_encoding",
+            "encoding_steps",
+            "encoding_time_scale",
+            "max_neurons",
+            "max_cache_size",
+        ):
+            if attr in brain_kwargs and hasattr(backend, attr):
+                try:
+                    setattr(backend, attr, brain_kwargs[attr])
+                except Exception:
+                    pass
+
 
 class BrainSimulationConfig(SystemConfiguration):
     """Configuration payload for :mod:`BrainSimulationSystem` integration."""
 
     profile: str = UserConfigurable(
-        default="production", from_env="BRAIN_SIM_PROFILE"
+        default="prototype", from_env="BRAIN_SIM_PROFILE"
     )
     """Base profile name defined inside ``BrainSimulationSystem``."""
 
@@ -438,6 +486,24 @@ class BrainSimulationConfig(SystemConfiguration):
             "dt": max(float(self.timestep_ms), 1e-3),
             "auto_background": bool(self.auto_background),
         }
+
+    def apply_to_backend(self, backend: Any) -> None:
+        """Best-effort runtime update for an existing BrainSimulation backend."""
+
+        overrides = self.resolved_overrides()
+        if not overrides:
+            return
+        update = getattr(backend, "update_config", None)
+        if callable(update):
+            try:
+                update(overrides=overrides)
+            except TypeError:
+                try:
+                    update(overrides)
+                except Exception:
+                    pass
+            except Exception:
+                pass
 
 
 def _merge_dicts(base: Dict[str, Any], overrides: Dict[str, Any]) -> Dict[str, Any]:

@@ -28,12 +28,30 @@ import logging
 from abc import ABC, abstractmethod
 from typing import BinaryIO
 
-import charset_normalizer
-import docx
-import pypdf
+try:  # pragma: no cover - optional dependency
+    import charset_normalizer  # type: ignore
+except Exception:  # pragma: no cover - optional dependency absent
+    charset_normalizer = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    import docx  # type: ignore
+except Exception:  # pragma: no cover - optional dependency absent
+    docx = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    import pypdf  # type: ignore
+except Exception:  # pragma: no cover - optional dependency absent
+    pypdf = None  # type: ignore
 import yaml
-from bs4 import BeautifulSoup
-from pylatexenc.latex2text import LatexNodes2Text
+try:  # pragma: no cover - optional dependency
+    from bs4 import BeautifulSoup  # type: ignore
+except Exception:  # pragma: no cover - optional dependency absent
+    BeautifulSoup = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    from pylatexenc.latex2text import LatexNodes2Text  # type: ignore
+except Exception:  # pragma: no cover - optional dependency absent
+    LatexNodes2Text = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -69,18 +87,25 @@ class ParserStrategy(ABC):
 # Basic text file reading
 class TXTParser(ParserStrategy):
     def read(self, file: BinaryIO) -> str:
-        charset_match = charset_normalizer.from_bytes(file.read()).best()
-        logger.debug(
-            f"Reading {getattr(file, 'name', 'file')} "
-            f"with encoding '{charset_match.encoding}'"
-        )
+        payload = file.read()
+        if charset_normalizer is None:  # pragma: no cover - optional dependency
+            return payload.decode(errors="replace")
+
+        charset_match = charset_normalizer.from_bytes(payload).best()
+        encoding = getattr(charset_match, "encoding", None)
+        if encoding:
+            logger.debug(
+                f"Reading {getattr(file, 'name', 'file')} with encoding '{encoding}'"
+            )
         return str(charset_match)
 
 
 # Reading text from binary file using pdf parser
 class PDFParser(ParserStrategy):
     def read(self, file: BinaryIO) -> str:
-        parser = pypdf.PdfReader(file)
+        if pypdf is None:  # pragma: no cover - optional dependency
+            raise RuntimeError("PDF parsing requires the 'pypdf' package.")
+        parser = pypdf.PdfReader(file)  # type: ignore[union-attr]
         text = ""
         for page_idx in range(len(parser.pages)):
             text += parser.pages[page_idx].extract_text()
@@ -90,7 +115,9 @@ class PDFParser(ParserStrategy):
 # Reading text from binary file using docs parser
 class DOCXParser(ParserStrategy):
     def read(self, file: BinaryIO) -> str:
-        doc_file = docx.Document(file)
+        if docx is None:  # pragma: no cover - optional dependency
+            raise RuntimeError("DOCX parsing requires the 'python-docx' package.")
+        doc_file = docx.Document(file)  # type: ignore[union-attr]
         text = ""
         for para in doc_file.paragraphs:
             text += para.text
@@ -107,8 +134,10 @@ class JSONParser(ParserStrategy):
 
 class XMLParser(ParserStrategy):
     def read(self, file: BinaryIO) -> str:
-        soup = BeautifulSoup(file, "xml")
-        text = soup.get_text()
+        if BeautifulSoup is None:  # pragma: no cover - optional dependency
+            return file.read().decode(errors="replace")
+        soup = BeautifulSoup(file, "xml")  # type: ignore[misc]
+        text = soup.get_text()  # type: ignore[union-attr]
         return text
 
 
@@ -122,16 +151,19 @@ class YAMLParser(ParserStrategy):
 
 class HTMLParser(ParserStrategy):
     def read(self, file: BinaryIO) -> str:
-        soup = BeautifulSoup(file, "html.parser")
-        text = soup.get_text()
+        if BeautifulSoup is None:  # pragma: no cover - optional dependency
+            return file.read().decode(errors="replace")
+        soup = BeautifulSoup(file, "html.parser")  # type: ignore[misc]
+        text = soup.get_text()  # type: ignore[union-attr]
         return text
 
 
 class LaTeXParser(ParserStrategy):
     def read(self, file: BinaryIO) -> str:
-        latex = file.read().decode()
-        text = LatexNodes2Text().latex_to_text(latex)
-        return text
+        latex = file.read().decode(errors="replace")
+        if LatexNodes2Text is None:  # pragma: no cover - optional dependency
+            return latex
+        return LatexNodes2Text().latex_to_text(latex)  # type: ignore[operator]
 
 
 class FileContext:

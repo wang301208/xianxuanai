@@ -115,8 +115,8 @@ SC = TypeVar("SC", bound=SystemConfiguration)
 class SystemSettings(BaseModel):
     """A base class for all system settings."""
 
-    name: str
-    description: str
+    name: str = ""
+    description: str = ""
 
     class Config:
         extra = "forbid"
@@ -269,8 +269,19 @@ def _recurse_user_config_fields(
 
         # Recurse into optional nested config object
         elif value is None and init_sub_config:
-            field_type = get_args(field.annotation)[0]  # Optional[T] -> T
-            if type(field_type) is ModelMetaclass and issubclass(
+            args = ()
+            try:
+                args = get_args(field.annotation)
+            except Exception:
+                args = ()
+            if not args:
+                try:
+                    args = get_args(field.outer_type_)
+                except Exception:
+                    args = ()
+            candidates = [t for t in args if t is not type(None)]  # noqa: E721
+            field_type = candidates[0] if len(candidates) == 1 else None
+            if field_type is not None and type(field_type) is ModelMetaclass and issubclass(
                 field_type, SystemConfiguration
             ):
                 sub_config = init_sub_config(field_type)

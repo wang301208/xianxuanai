@@ -1,7 +1,11 @@
 import logging
 
 from colorama import Style
-from google.cloud.logging_v2.handlers import CloudLoggingFilter, StructuredLogHandler
+try:  # optional dependency
+    from google.cloud.logging_v2.handlers import CloudLoggingFilter, StructuredLogHandler
+except ModuleNotFoundError:  # pragma: no cover - optional dependency absent
+    CloudLoggingFilter = None  # type: ignore[assignment]
+    StructuredLogHandler = None  # type: ignore[assignment]
 
 from autogpt.core.runner.client_lib.logging import FancyConsoleFormatter
 
@@ -40,14 +44,24 @@ class AutoGptFormatter(FancyConsoleFormatter):
             return super().format(record)
 
 
-class StructuredLoggingFormatter(StructuredLogHandler, logging.Formatter):
-    def __init__(self):
-        # Set up CloudLoggingFilter to add diagnostic info to the log records
-        self.cloud_logging_filter = CloudLoggingFilter()
+if StructuredLogHandler is not None and CloudLoggingFilter is not None:
 
-        # Init StructuredLogHandler
-        super().__init__()
+    class StructuredLoggingFormatter(StructuredLogHandler, logging.Formatter):
+        def __init__(self):
+            # Set up CloudLoggingFilter to add diagnostic info to the log records
+            self.cloud_logging_filter = CloudLoggingFilter()
 
-    def format(self, record: logging.LogRecord) -> str:
-        self.cloud_logging_filter.filter(record)
-        return super().format(record)
+            # Init StructuredLogHandler
+            super().__init__()
+
+        def format(self, record: logging.LogRecord) -> str:
+            self.cloud_logging_filter.filter(record)
+            return super().format(record)
+
+else:
+
+    class StructuredLoggingFormatter(logging.Formatter):
+        """Fallback structured formatter when google-cloud-logging is unavailable."""
+
+        def __init__(self):
+            super().__init__()

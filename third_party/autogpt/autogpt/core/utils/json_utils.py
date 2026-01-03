@@ -24,9 +24,13 @@
 
 import logging
 import re
+import json
 from typing import Any
 
-import demjson3
+try:  # optional dependency
+    import demjson3  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency absent
+    demjson3 = None  # type: ignore[assignment]
 
 # 获取模块日志记录器
 logger = logging.getLogger(__name__)
@@ -71,6 +75,9 @@ def json_loads(json_str: str) -> Any:
 
     if match:
         json_str = match.group(1).strip()
+
+    if demjson3 is None:
+        return json.loads(json_str)
 
     json_result = demjson3.decode(json_str, return_errors=True)
     assert json_result is not None  # by virtue of return_errors=True

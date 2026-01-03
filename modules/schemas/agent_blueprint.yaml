@@ -27,8 +27,9 @@ properties:
     default: false
   brain_backend:
     type: string
-    description: Select the cognitive backend used by the agent (llm, transformer, whole_brain, brain_simulation).
+    description: Select the cognitive backend used by the agent (llm, transformer, whole_brain, brain_simulation). Defaults to brain_simulation when omitted.
     enum: [llm, transformer, whole_brain, brain_simulation]
+    default: brain_simulation
   use_knowledge_base:
     type: boolean
     description: Attach a unified knowledge base to the agent.

@@ -1,5 +1,6 @@
 """Main script for the autogpt package."""
 import logging
+import os
 from logging import _nameToLevel as logLevelMap
 from pathlib import Path
 from typing import Optional
@@ -15,8 +16,19 @@ from .telemetry import setup_telemetry
 
 
 @click.group(invoke_without_command=True)
+@click.option(
+    "--brain-backend",
+    type=click.Choice(
+        ["brain_simulation", "whole_brain", "transformer", "llm"],
+        case_sensitive=False,
+    ),
+    default=None,
+    help="Override cognitive backend (default: brain_simulation). Choices: llm, transformer, whole_brain, brain_simulation.",
+)
 @click.pass_context
-def cli(ctx: click.Context):
+def cli(ctx: click.Context, brain_backend: str | None):
+    if brain_backend:
+        os.environ["BRAIN_BACKEND"] = str(brain_backend).lower()
     setup_telemetry()
     try:
         validate_env()

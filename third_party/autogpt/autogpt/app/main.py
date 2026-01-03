@@ -332,10 +332,10 @@ def _resolve_brain_backend(backend: BrainBackend | str | None) -> BrainBackend:
     if isinstance(backend, BrainBackend):
         return backend
     if backend is None:
-        return BrainBackend.WHOLE_BRAIN
+        return BrainBackend.BRAIN_SIMULATION
     backend_value = str(backend).strip().lower()
     if not backend_value:
-        return BrainBackend.WHOLE_BRAIN
+        return BrainBackend.BRAIN_SIMULATION
     try:
         return BrainBackend(backend_value)
     except ValueError:

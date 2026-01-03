@@ -1609,6 +1609,85 @@
         "archived": false,
         "shard": "date:20251220"
       }
+    },
+    {
+      "id": "35797e8c-dbc7-430c-9a99-015630350d34",
+      "text": "Vision agent-6676f3d8-8ff8-446e-a889-27d0735a274a:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).\n[system] Semantic visual observation\n[observation] Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+      "metadata": {
+        "task_id": "agent-6676f3d8-8ff8-446e-a889-27d0735a274a:perception",
+        "summary": "Vision agent-6676f3d8-8ff8-446e-a889-27d0735a274a:image:1: Visual scene features structured layout (edge_energy=0.18, contrast=0.22).",
+        "modality": "vision",
+        "labels": [
+          "structured_scene"
+        ],
+        "cycle": 1,
+        "subject": "agent-6676f3d8-8ff8-446e-a889-27d0735a274a:image:1",
+        "embedding_source": "heuristic",
+        "embedding": [
+          0.2710897922515869,
+          0.42163100838661194,
+          0.5508965849876404,
+          0.6672709584236145
+        ],
+        "source": "task_memory",
+        "created_at": 1767317163.2401085,
+        "last_access": 1767317163.2401085,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20260102"
+      }
+    },
+    {
+      "id": "4d72dad1-af2d-4ee4-a892-2deb607494cb",
+      "text": "Audio agent-6676f3d8-8ff8-446e-a889-27d0735a274a:audio:1: Audio segment is quiet_audio, steady_audio with bright timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with bright timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "agent-6676f3d8-8ff8-446e-a889-27d0735a274a:perception",
+        "summary": "Audio agent-6676f3d8-8ff8-446e-a889-27d0735a274a:audio:1: Audio segment is quiet_audio, steady_audio with bright timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "high_timbre"
+        ],
+        "cycle": 1,
+        "subject": "agent-6676f3d8-8ff8-446e-a889-27d0735a274a:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1767317163.2401085,
+        "last_access": 1767317163.2401085,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20260102"
+      }
+    },
+    {
+      "id": "3553e05f-f3e7-45bb-97bb-2ff1f7e12754",
+      "text": "Audio agent-6676f3d8-8ff8-446e-a889-27d0735a274a:audio:1: Audio segment is quiet_audio, steady_audio with bright timbre (energy=0.00, flux=0.00).\n[system] Semantic audio observation\n[observation] Audio segment is quiet_audio, steady_audio with bright timbre (energy=0.00, flux=0.00).",
+      "metadata": {
+        "task_id": "agent-6676f3d8-8ff8-446e-a889-27d0735a274a:perception",
+        "summary": "Audio agent-6676f3d8-8ff8-446e-a889-27d0735a274a:audio:1: Audio segment is quiet_audio, steady_audio with bright timbre (energy=0.00, flux=0.00).",
+        "modality": "audio",
+        "labels": [
+          "quiet_audio",
+          "steady_audio",
+          "high_timbre"
+        ],
+        "cycle": 1,
+        "subject": "agent-6676f3d8-8ff8-446e-a889-27d0735a274a:audio:1",
+        "transcription_status": "unavailable",
+        "source": "task_memory",
+        "created_at": 1767317163.250863,
+        "last_access": 1767317163.250863,
+        "usage": 0,
+        "weight": 1.0,
+        "promoted": false,
+        "archived": false,
+        "shard": "date:20260102"
+      }
     }
   ]
 }

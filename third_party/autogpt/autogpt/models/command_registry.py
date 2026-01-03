@@ -73,7 +73,7 @@ class CommandRegistry:
         if command.name in self.commands:
             del self.commands[command.name]
             for alias in command.aliases:
-                del self.commands_aliases[alias]
+                self.commands_aliases.pop(alias, None)
         else:
             raise KeyError(f"Command '{command.name}' not found in registry.")
 
@@ -169,7 +169,15 @@ class CommandRegistry:
             module_name (str): The name of the module to import for command plugins.
         """
 
-        module = importlib.import_module(module_name)
+        try:
+            module = importlib.import_module(module_name)
+        except (ModuleNotFoundError, ImportError) as exc:
+            logger.warning(
+                "Skipping command module '%s' due to import error: %s",
+                module_name,
+                exc,
+            )
+            return
 
         category = self.register_module_category(module)
 

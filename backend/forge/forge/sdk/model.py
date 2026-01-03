@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from uuid import uuid4
 from enum import Enum
 from typing import List, Optional
 
@@ -78,24 +79,24 @@ class TaskRequestBody(BaseModel):
 
 class Task(TaskRequestBody):
     created_at: datetime = Field(
-        ...,
+        default_factory=datetime.now,
         description="The creation datetime of the task.",
         example="2023-01-01T00:00:00Z",
         json_encoders={datetime: lambda v: v.isoformat()},
     )
     modified_at: datetime = Field(
-        ...,
+        default_factory=datetime.now,
         description="The modification datetime of the task.",
         example="2023-01-01T00:00:00Z",
         json_encoders={datetime: lambda v: v.isoformat()},
     )
     task_id: str = Field(
-        ...,
+        default_factory=lambda: str(uuid4()),
         description="The ID of the task.",
         example="50da533e-3904-4401-8a07-c49adf88b5eb",
     )
     artifacts: Optional[List[Artifact]] = Field(
-        [],
+        default_factory=list,
         description="A list of artifacts that the task has produced.",
         example=[
             "7a49f31c-f9c6-4346-a22c-e32bc5af4d8e",

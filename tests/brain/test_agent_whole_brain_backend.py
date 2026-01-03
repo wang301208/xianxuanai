@@ -63,8 +63,17 @@ else:
     from third_party.autogpt.autogpt.models.action_history import Action, ActionSuccessResult, Episode
 
 
-@pytest.mark.parametrize("explicit_backend", [True, False], ids=["explicit", "default"])
-def test_agent_with_whole_brain_backend_proposes_internal_action(explicit_backend):
+@pytest.mark.parametrize(
+    ("explicit_backend", "expected_backend"),
+    [
+        (True, "whole_brain"),
+        (False, "brain_simulation"),
+    ],
+    ids=["explicit-whole-brain", "default-brain-simulation"],
+)
+def test_agent_with_structured_brain_backend_proposes_internal_action(
+    explicit_backend, expected_backend
+):
     if Agent is None:
         pytest.skip("Agent dependencies not available in this test environment")
 
@@ -89,7 +98,7 @@ def test_agent_with_whole_brain_backend_proposes_internal_action(explicit_backen
         if explicit_backend:
             config_kwargs["brain_backend"] = BrainBackend.WHOLE_BRAIN
         config = AgentConfiguration(**config_kwargs)
-        assert config.brain_backend == BrainBackend.WHOLE_BRAIN
+        assert config.brain_backend.value == expected_backend
         config.whole_brain.runtime.enable_self_learning = False
         config.whole_brain.runtime.metrics_enabled = True
         settings = AgentSettings(config=config)
@@ -119,13 +128,13 @@ def test_agent_with_whole_brain_backend_proposes_internal_action(explicit_backen
 
         command, args, thoughts = await agent.propose_action()
 
-        assert agent.config.brain_backend == BrainBackend.WHOLE_BRAIN
+        assert agent.config.brain_backend.value == expected_backend
         assert agent.whole_brain is not None
         assert command == "internal_brain_action"
         assert args["intention"]
-        assert thoughts["backend"] == "whole_brain"
+        assert thoughts["backend"] == expected_backend
         assert isinstance(thoughts["plan"], list)
-        assert thoughts["metrics"]  # telemetry forwarded from WholeBrainSimulation
+        assert isinstance(thoughts["metrics"], dict)
         llm_provider.create_chat_completion.assert_not_called()
 
     asyncio.run(_run_test())
@@ -135,7 +144,7 @@ def test_agent_with_whole_brain_backend_proposes_internal_action(explicit_backen
     Agent is None or "create_agent_state" not in globals() or create_agent_state is None,
     reason="Agent dependencies not available in this test environment",
 )
-def test_config_builder_defaults_to_whole_brain(monkeypatch, tmp_path):
+def test_config_builder_defaults_to_brain_simulation(monkeypatch, tmp_path):
     monkeypatch.delenv("BRAIN_BACKEND", raising=False)
     monkeypatch.setenv("PLUGINS_CONFIG_FILE", str(tmp_path / "plugins_config.yaml"))
     monkeypatch.setenv("AI_SETTINGS_FILE", str(tmp_path / "ai_settings.yaml"))
@@ -144,7 +153,7 @@ def test_config_builder_defaults_to_whole_brain(monkeypatch, tmp_path):
 
     config = ConfigBuilder.build_config_from_env(project_root=tmp_path)
 
-    assert config.brain_backend == BrainBackend.WHOLE_BRAIN
+    assert config.brain_backend == BrainBackend.BRAIN_SIMULATION
 
     from forge.sdk.model import Task
 
@@ -165,4 +174,4 @@ def test_config_builder_defaults_to_whole_brain(monkeypatch, tmp_path):
         app_config=config,
     )
 
-    assert agent_state.config.brain_backend == BrainBackend.WHOLE_BRAIN
+    assert agent_state.config.brain_backend == BrainBackend.BRAIN_SIMULATION

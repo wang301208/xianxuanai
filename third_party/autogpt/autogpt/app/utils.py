@@ -11,7 +11,11 @@ from typing import TYPE_CHECKING
 import click
 import requests
 from colorama import Fore, Style
-from git import InvalidGitRepositoryError, Repo
+try:  # optional dependency
+    from git import InvalidGitRepositoryError, Repo  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency absent
+    InvalidGitRepositoryError = Exception  # type: ignore[assignment]
+    Repo = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from autogpt.config import Config
@@ -136,6 +140,8 @@ def get_bulletin_from_web():
 
 
 def get_current_git_branch() -> str:
+    if Repo is None:
+        return ""
     try:
         repo = Repo(search_parent_directories=True)
         branch = repo.active_branch
@@ -148,6 +154,8 @@ def vcs_state_diverges_from_master() -> bool:
     """
     Returns whether a git repo is present and contains changes that are not in `master`.
     """
+    if Repo is None:
+        return False
     paths_we_care_about = "autogpts/autogpt/autogpt/**/*.py"
     try:
         repo = Repo(search_parent_directories=True)

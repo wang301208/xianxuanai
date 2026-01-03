@@ -16,3 +16,9 @@ _BACKEND_REASONING = (Path(__file__).resolve().parents[1] / "backend" / "reasoni
 if _BACKEND_REASONING.exists():
     __path__.append(str(_BACKEND_REASONING))  # type: ignore[name-defined]
 
+try:  # pragma: no cover - optional re-export
+    from .decision_engine import DecisionEngine  # type: ignore
+except Exception:  # pragma: no cover
+    DecisionEngine = None  # type: ignore[assignment]
+
+__all__ = ["DecisionEngine"]

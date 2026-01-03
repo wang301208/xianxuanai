@@ -32,7 +32,10 @@ if TYPE_CHECKING:
     from autogpt.models.command_registry import CommandRegistry
     from knowledge import UnifiedKnowledgeBase
     from reasoning import DecisionEngine
-from reasoning.decision_engine import ActionDirective
+try:  # pragma: no cover - optional import path
+    from reasoning.decision_engine import ActionDirective
+except ModuleNotFoundError:  # pragma: no cover - fallback for local repo layout
+    from backend.reasoning.decision_engine import ActionDirective
 
 from autogpt.agents.utils.prompt_scratchpad import PromptScratchpad
 from autogpt.config import ConfigBuilder
@@ -112,7 +115,7 @@ class BaseAgentConfiguration(SystemConfiguration):
     """Whether to initialize the ``TransformerBrain`` component."""
 
     brain_backend: BrainBackend = UserConfigurable(
-        default=BrainBackend.WHOLE_BRAIN
+        default=BrainBackend.BRAIN_SIMULATION
     )
     """Selects the cognitive backend used when ``big_brain`` is enabled."""
 
@@ -217,7 +220,7 @@ class BaseAgentConfiguration(SystemConfiguration):
                 raise ValueError(f"Unsupported brain backend '{v}'") from exc
         if values.get("use_transformer_brain"):
             return BrainBackend.TRANSFORMER
-        return BrainBackend.WHOLE_BRAIN
+        return BrainBackend.BRAIN_SIMULATION
 
     @validator("use_transformer_brain", always=True)
     def _sync_transformer_flag(cls, v: bool, values: dict[str, Any]) -> bool:
@@ -241,15 +244,25 @@ class BaseAgentSettings(SystemSettings):
     )
     """Directives (general instructional guidelines) for the agent."""
 
+    @staticmethod
+    def _default_task() -> Task:
+        try:
+            return Task(
+                input="Terminate immediately",
+                additional_input=None,
+                created_at=datetime.now(),
+                modified_at=datetime.now(),
+                task_id=str(uuid4()),
+                artifacts=[],
+            )
+        except TypeError:
+            try:
+                return Task(input="Terminate immediately")  # type: ignore[call-arg]
+            except TypeError:
+                return Task("Terminate immediately")  # type: ignore[misc]
+
     task: Task = Field(
-        default_factory=lambda: Task(
-            input="Terminate immediately",
-            additional_input=None,
-            created_at=datetime.now(),
-            modified_at=datetime.now(),
-            task_id=str(uuid4()),
-            artifacts=[],
-        ),
+        default_factory=_default_task,
         description="The user-given task that the agent is working on.",
     )
 
@@ -342,10 +355,13 @@ class BaseAgent(Configurable[BaseAgentSettings], ABC):
         else:
             self.brain = None
 
-        structured_backend = self.brain_backend in (
-            BrainBackend.WHOLE_BRAIN,
-            BrainBackend.BRAIN_SIMULATION,
-        )
+        structured_backend = False
+        try:
+            is_structured = getattr(self.brain_backend, "is_structured", None)
+            if callable(is_structured):
+                structured_backend = bool(is_structured())
+        except Exception:
+            structured_backend = False
         if structured_backend:
             if self.whole_brain is None:
                 try:
@@ -362,35 +378,21 @@ class BaseAgent(Configurable[BaseAgentSettings], ABC):
                     )
                     self.whole_brain = None
             else:
-                if self.brain_backend == BrainBackend.WHOLE_BRAIN:
-                    brain_kwargs = self.config.whole_brain.to_simulation_kwargs()
-                    runtime = brain_kwargs.get("config")
-                    if runtime is not None and hasattr(
-                        self.whole_brain, "update_config"
-                    ):
+                config_attr = None
+                try:
+                    config_attr = self.brain_backend.structured_config_attr()
+                except Exception:
+                    config_attr = None
+
+                if config_attr:
+                    cfg = getattr(self.config, config_attr, None)
+                    apply = getattr(cfg, "apply_to_backend", None)
+                    if callable(apply):
                         try:
-                            self.whole_brain.update_config(runtime)
+                            apply(self.whole_brain)
                         except Exception:
                             logger.debug(
-                                "Brain backend runtime update failed.", exc_info=True
-                            )
-                    for attr in (
-                        "neuromorphic_encoding",
-                        "encoding_steps",
-                        "encoding_time_scale",
-                        "max_neurons",
-                        "max_cache_size",
-                    ):
-                        if attr in brain_kwargs and hasattr(self.whole_brain, attr):
-                            setattr(self.whole_brain, attr, brain_kwargs[attr])
-                elif self.brain_backend == BrainBackend.BRAIN_SIMULATION:
-                    overrides = self.config.brain_simulation.resolved_overrides()
-                    if overrides and hasattr(self.whole_brain, "update_config"):
-                        try:
-                            self.whole_brain.update_config(overrides=overrides)
-                        except Exception:
-                            logger.debug(
-                                "Brain backend override update failed.",
+                                "Brain backend configuration update failed.",
                                 exc_info=True,
                             )
             if self.whole_brain is not None:
@@ -734,8 +736,15 @@ class BaseAgent(Configurable[BaseAgentSettings], ABC):
             self._prompt_scratchpad = PromptScratchpad()
             self._brain_pending_interaction = None
             backend = self.config.brain_backend
+            backend_structured = False
+            try:
+                is_structured = getattr(backend, "is_structured", None)
+                if callable(is_structured):
+                    backend_structured = bool(is_structured())
+            except Exception:
+                backend_structured = False
             use_structured_brain = (
-                backend in (BrainBackend.WHOLE_BRAIN, BrainBackend.BRAIN_SIMULATION)
+                backend_structured
                 and self.whole_brain is not None
                 and self._whole_brain_adapter is not None
             )

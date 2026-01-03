@@ -4,9 +4,20 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Coroutine, Iterator, Optional, ParamSpec, TypeVar
 
-import sentry_sdk
+try:  # optional dependency
+    import sentry_sdk  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency absent
+    class _SentryStub:  # pragma: no cover - lightweight fallback
+        @staticmethod
+        def capture_exception(*args, **kwargs) -> None:
+            return None
+
+    sentry_sdk = _SentryStub()  # type: ignore[assignment]
 import tenacity
-import tiktoken
+try:  # optional dependency
+    import tiktoken  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional dependency absent
+    tiktoken = None  # type: ignore[assignment]
 import yaml
 from openai._exceptions import APIStatusError, RateLimitError
 from openai.types import CreateEmbeddingResponse
@@ -46,6 +57,13 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 OpenAIEmbeddingParser = Callable[[Embedding], Embedding]
+
+
+class _WhitespaceTokenizer:
+    def encode(self, text: str) -> list[str]:
+        if not text:
+            return []
+        return str(text).split()
 
 
 class OpenAIModelName(str, enum.Enum):
@@ -341,6 +359,8 @@ class OpenAIProvider(
 
     @classmethod
     def get_tokenizer(cls, model_name: OpenAIModelName) -> ModelTokenizer:
+        if tiktoken is None:
+            return _WhitespaceTokenizer()  # type: ignore[return-value]
         return tiktoken.encoding_for_model(model_name)
 
     @classmethod
@@ -373,13 +393,16 @@ class OpenAIProvider(
                 " See https://github.com/openai/openai-python/blob/main/chatml.md for"
                 " information on how messages are converted to tokens."
             )
-        try:
-            encoding = tiktoken.encoding_for_model(encoding_model)
-        except KeyError:
-            logging.getLogger(__class__.__name__).warning(
-                f"Model {model_name} not found. Defaulting to cl100k_base encoding."
-            )
-            encoding = tiktoken.get_encoding("cl100k_base")
+        if tiktoken is None:
+            encoding = cls.get_tokenizer(model_name)
+        else:
+            try:
+                encoding = tiktoken.encoding_for_model(encoding_model)
+            except KeyError:
+                logging.getLogger(__class__.__name__).warning(
+                    f"Model {model_name} not found. Defaulting to cl100k_base encoding."
+                )
+                encoding = tiktoken.get_encoding("cl100k_base")
 
         num_tokens = 0
         for message in messages:

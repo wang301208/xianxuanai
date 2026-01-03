@@ -45,16 +45,16 @@ GPT_3_MODEL = OpenAIModelName.GPT3
 def _brain_backend_from_env() -> BrainBackend:
     value = os.getenv("BRAIN_BACKEND")
     if not value:
-        return BrainBackend.WHOLE_BRAIN
+        return BrainBackend.BRAIN_SIMULATION
     try:
         return BrainBackend(value.lower())
     except ValueError:
         logger.warning(
             "Invalid BRAIN_BACKEND value '%s'; falling back to '%s'.",
             value,
-            BrainBackend.WHOLE_BRAIN.value,
+            BrainBackend.BRAIN_SIMULATION.value,
         )
-        return BrainBackend.WHOLE_BRAIN
+        return BrainBackend.BRAIN_SIMULATION
 
 
 def _auto_authorize_from_env() -> float:
@@ -71,9 +71,12 @@ def _auto_authorize_from_env() -> float:
         return 24.0
 
 
-class Config(SystemSettings, arbitrary_types_allowed=True):
+class Config(SystemSettings):
     name: str = "Auto-GPT configuration"
     description: str = "Default configuration for the Auto-GPT application."
+
+    class Config(SystemSettings.Config):
+        arbitrary_types_allowed = True
 
     ########################
     # Application Settings #
@@ -176,7 +179,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
         from_env=lambda: os.getenv("USE_TRANSFORMER_BRAIN", "False") == "True",
     )
     brain_backend: BrainBackend = UserConfigurable(
-        default=BrainBackend.WHOLE_BRAIN,
+        default=BrainBackend.BRAIN_SIMULATION,
         from_env=_brain_backend_from_env,
     )
     whole_brain: WholeBrainConfig = Field(default_factory=WholeBrainConfig)
@@ -228,7 +231,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     )
 
     # Text to image
-    image_provider: Optional[str] = UserConfigurable(from_env="IMAGE_PROVIDER")
+    image_provider: Optional[str] = UserConfigurable(default=None, from_env="IMAGE_PROVIDER")
     huggingface_image_model: str = UserConfigurable(
         default="CompVis/stable-diffusion-v1-4", from_env="HUGGINGFACE_IMAGE_MODEL"
     )
@@ -242,7 +245,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
         default="huggingface", from_env="AUDIO_TO_TEXT_PROVIDER"
     )
     huggingface_audio_to_text_model: Optional[str] = UserConfigurable(
-        from_env="HUGGINGFACE_AUDIO_TO_TEXT_MODEL"
+        default=None, from_env="HUGGINGFACE_AUDIO_TO_TEXT_MODEL"
     )
 
     # Web browsing
@@ -288,22 +291,22 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     )
 
     # Github
-    github_api_key: Optional[str] = UserConfigurable(from_env="GITHUB_API_KEY")
-    github_username: Optional[str] = UserConfigurable(from_env="GITHUB_USERNAME")
+    github_api_key: Optional[str] = UserConfigurable(default=None, from_env="GITHUB_API_KEY")
+    github_username: Optional[str] = UserConfigurable(default=None, from_env="GITHUB_USERNAME")
 
     # Google
-    google_api_key: Optional[str] = UserConfigurable(from_env="GOOGLE_API_KEY")
+    google_api_key: Optional[str] = UserConfigurable(default=None, from_env="GOOGLE_API_KEY")
     google_custom_search_engine_id: Optional[str] = UserConfigurable(
-        from_env="GOOGLE_CUSTOM_SEARCH_ENGINE_ID",
+        default=None, from_env="GOOGLE_CUSTOM_SEARCH_ENGINE_ID",
     )
 
     # Huggingface
     huggingface_api_token: Optional[str] = UserConfigurable(
-        from_env="HUGGINGFACE_API_TOKEN"
+        default=None, from_env="HUGGINGFACE_API_TOKEN"
     )
 
     # Stable Diffusion
-    sd_webui_auth: Optional[str] = UserConfigurable(from_env="SD_WEBUI_AUTH")
+    sd_webui_auth: Optional[str] = UserConfigurable(default=None, from_env="SD_WEBUI_AUTH")
 
     @validator("plugins", each_item=True)
     def validate_plugins(cls, p: AutoGPTPluginTemplate | Any):

@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import logging
 import sys
 from pathlib import Path
@@ -14,6 +15,7 @@ from third_party.autogpt.autogpt.core.ability.schema import AbilityResult
 from third_party.autogpt.autogpt.core.agent.cognition import SimpleBrainAdapter
 from third_party.autogpt.autogpt.core.agent.simple import SimpleAgent
 from third_party.autogpt.autogpt.core.resource.model_providers.schema import CompletionModelFunction
+from third_party.autogpt.autogpt.core.brain.config import BrainBackend
 from modules.brain.state import (
     BrainCycleResult,
     CognitiveIntent,
@@ -54,7 +56,7 @@ class StubBrain:
         )
         perception = PerceptionSnapshot(modalities={})
         emotion = EmotionSnapshot(
-            primary=EmotionType.CALM,
+            primary=EmotionType.NEUTRAL,
             intensity=0.2,
             mood=0.1,
             dimensions={},
@@ -140,44 +142,53 @@ class StubAbilityRegistry:
         return self._ability
 
 
-@pytest.mark.asyncio
-async def test_simple_agent_uses_neuromorphic_backend_by_default(monkeypatch, tmp_path):
+def test_simple_agent_uses_neuromorphic_backend_by_default(monkeypatch, tmp_path):
+    captured: dict[str, BrainBackend] = {}
+
+    def fake_create_brain_backend(backend: BrainBackend, *args, **kwargs):
+        captured["backend"] = backend
+        return StubBrain()
+
     monkeypatch.setattr(
-        "autogpt.core.agent.cognition.WholeBrainSimulation",
-        lambda **kwargs: StubBrain(),
+        "third_party.autogpt.autogpt.core.agent.cognition.create_brain_backend",
+        fake_create_brain_backend,
     )
 
-    logger = logging.getLogger("simple-agent-neuromorphic")
-    memory = StubMemory()
-    workspace = StubWorkspace(tmp_path)
-    ability_registry = StubAbilityRegistry()
+    async def _run_test() -> None:
+        logger = logging.getLogger("simple-agent-neuromorphic")
+        memory = StubMemory()
+        workspace = StubWorkspace(tmp_path)
+        ability_registry = StubAbilityRegistry()
 
-    adapter_settings = SimpleBrainAdapter.default_settings.copy(deep=True)
-    cognition = SimpleBrainAdapter(adapter_settings, logger.getChild("cognition"))
+        adapter_settings = copy.deepcopy(SimpleBrainAdapter.default_settings)
+        cognition = SimpleBrainAdapter(adapter_settings, logger.getChild("cognition"))
 
-    agent_settings = SimpleAgent.default_settings.copy(deep=True)
-    agent = SimpleAgent(
-        settings=agent_settings,
-        logger=logger,
-        ability_registry=ability_registry,
-        memory=memory,
-        model_providers={},
-        planning=None,
-        workspace=workspace,
-        cognition=cognition,
-        creative_planning=None,
-    )
+        agent_settings = copy.deepcopy(SimpleAgent.default_settings)
+        agent = SimpleAgent(
+            settings=agent_settings,
+            logger=logger,
+            ability_registry=ability_registry,
+            memory=memory,
+            model_providers={},
+            planning=None,
+            workspace=workspace,
+            cognition=cognition,
+            creative_planning=None,
+        )
 
-    assert agent._use_neuromorphic_backend()  # type: ignore[attr-defined]
+        assert agent._use_neuromorphic_backend()  # type: ignore[attr-defined]
+        assert captured["backend"] == BrainBackend.BRAIN_SIMULATION
 
-    plan = await agent.build_initial_plan()
-    assert plan["backend"] == "whole_brain"
-    assert cognition._brain.cycles  # type: ignore[attr-defined]
+        plan = await agent.build_initial_plan()
+        assert plan["backend"] == BrainBackend.BRAIN_SIMULATION.value
+        assert cognition._brain.cycles  # type: ignore[attr-defined]
 
-    task, ability_info = await agent.determine_next_ability()
-    assert ability_info["backend"] == "whole_brain"
-    assert ability_info["next_ability"] == "self_assess"
-    assert cognition._brain.cycles  # type: ignore[attr-defined]
-    assert len(cognition._brain.cycles) >= 2  # type: ignore[attr-defined]
+        task, ability_info = await agent.determine_next_ability()
+        assert ability_info["backend"] == BrainBackend.BRAIN_SIMULATION.value
+        assert ability_info["next_ability"] == "self_assess"
+        assert cognition._brain.cycles  # type: ignore[attr-defined]
+        assert len(cognition._brain.cycles) >= 2  # type: ignore[attr-defined]
 
-    assert task.context.status == task.context.status  # sanity check access
+        assert task.context.status == task.context.status  # sanity check access
+
+    asyncio.run(_run_test())

@@ -9,11 +9,11 @@ tools.
 """
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Iterable, TYPE_CHECKING
 
 import ast
-import asyncio
 import hashlib
 import logging
 from functools import lru_cache
@@ -21,7 +21,6 @@ from json import JSONDecodeError
 from datetime import datetime
 from uuid import uuid4
 
-import aiofiles
 import yaml
 from jsonschema import validate
 
@@ -45,7 +44,7 @@ from capability.librarian import Librarian
 from org_charter import io as charter_io
 from backend.monitoring.global_workspace import global_workspace
 from knowledge import UnifiedKnowledgeBase
-from reasoning import DecisionEngine
+from backend.reasoning import DecisionEngine
 from third_party.autogpt.autogpt.core.brain.transformer_brain import TransformerBrain
 from modules.brain.backends import BrainBackendInitError, create_brain_backend
 
@@ -80,8 +79,8 @@ def _verify_skill(name: str, code: str, metadata: dict) -> None:
 def _parse_blueprint(path: Path) -> dict:
     """Load and validate a blueprint file.
 
-    This function asynchronously reads the blueprint from disk and caches the
-    parsed result so subsequent calls for the same path avoid disk I/O.
+    This function reads the blueprint from disk and caches the parsed result so
+    subsequent calls for the same path avoid disk I/O.
 
     Parameters
     ----------
@@ -89,22 +88,7 @@ def _parse_blueprint(path: Path) -> dict:
         Path to a YAML file conforming to ``schemas/agent_blueprint.yaml``.
     """
 
-    async def _read() -> str:
-        async with aiofiles.open(path, "r", encoding="utf-8") as f:
-            return await f.read()
-
-    try:
-        content = asyncio.run(_read())
-    except RuntimeError:
-        # If an event loop is already running, fall back to creating a new one
-        loop = asyncio.new_event_loop()
-        try:
-            asyncio.set_event_loop(loop)
-            content = loop.run_until_complete(_read())
-        finally:
-            asyncio.set_event_loop(None)
-            loop.close()
-
+    content = path.read_text(encoding="utf-8")
     data = yaml.safe_load(content)
     validate(instance=data, schema=charter_io.BLUEPRINT_SCHEMA)
     return data
@@ -199,24 +183,47 @@ def create_agent_from_blueprint(
                 "Unsupported brain backend '%s' in blueprint; using %s",
                 backend_value,
                 selected_backend.value,
-            )
+                )
 
     enable_brain = blueprint.get("use_transformer_brain", config.use_transformer_brain)
     enable_kb = blueprint.get("use_knowledge_base", config.use_knowledge_base)
     enable_de = blueprint.get("use_decision_engine", config.use_decision_engine)
+    if selected_backend == BrainBackend.TRANSFORMER:
+        enable_brain = True
 
-    brain = (
-        TransformerBrain()
-        if enable_brain and selected_backend == BrainBackend.TRANSFORMER
-        else None
+    agent_config = copy.deepcopy(config)
+    agent_config.brain_backend = selected_backend
+    agent_config.use_knowledge_base = bool(enable_kb)
+    agent_config.use_decision_engine = bool(enable_de)
+
+    brain = None
+    if enable_brain and selected_backend == BrainBackend.TRANSFORMER:
+        try:
+            brain = TransformerBrain()
+        except Exception as exc:  # pragma: no cover - optional dependency
+            logger.warning(
+                "Unable to initialise transformer backend for agent '%s': %s",
+                blueprint.get("role_name", "unknown"),
+                exc,
+            )
+            brain = None
+    agent_config.use_transformer_brain = bool(
+        brain is not None and selected_backend == BrainBackend.TRANSFORMER
     )
     whole_brain = None
-    if selected_backend in (BrainBackend.WHOLE_BRAIN, BrainBackend.BRAIN_SIMULATION):
+    backend_structured = False
+    try:
+        is_structured = getattr(selected_backend, "is_structured", None)
+        if callable(is_structured):
+            backend_structured = bool(is_structured())
+    except Exception:
+        backend_structured = False
+    if backend_structured:
         try:
             whole_brain = create_brain_backend(
                 selected_backend,
-                whole_brain_config=config.whole_brain,
-                brain_simulation_config=config.brain_simulation,
+                whole_brain_config=agent_config.whole_brain,
+                brain_simulation_config=agent_config.brain_simulation,
             )
         except BrainBackendInitError as exc:
             logger.warning(
@@ -277,7 +284,7 @@ def create_agent_from_blueprint(
             task=task_model,
             ai_profile=profile,
             directives=directives,
-            app_config=config,
+            app_config=agent_config,
             file_storage=file_storage,
             llm_provider=llm_provider,
             brain=brain,
@@ -296,8 +303,11 @@ def create_agent_from_blueprint(
         except Exception:
             logger.debug("Failed to register agent with conductor", exc_info=True)
 
+    agent_state = getattr(agent, "state", None) or getattr(agent, "settings", None)
+    agent_id = getattr(agent_state, "agent_id", None) or blueprint.get("role_name", "unknown")
+
     if world_model is not None:
-        def record_visual(image=None, features=None, *, _wm=world_model, _aid=agent.settings.agent_id):
+        def record_visual(image=None, features=None, *, _wm=world_model, _aid=agent_id):
             _wm.add_visual_observation(_aid, image=image, features=features)
 
         setattr(agent, "record_visual_observation", record_visual)
@@ -312,16 +322,16 @@ def create_agent_from_blueprint(
 
     # Register core components with the global workspace so they can
     # exchange state and attention with other modules.
-    global_workspace.register_module(agent.settings.agent_id, agent)
-    command_registry_key = f"{agent.settings.agent_id}.command_registry"
-    llm_provider_key = f"{agent.settings.agent_id}.llm_provider"
+    global_workspace.register_module(agent_id, agent)
+    command_registry_key = f"{agent_id}.command_registry"
+    llm_provider_key = f"{agent_id}.llm_provider"
     global_workspace.register_module(command_registry_key, agent.command_registry)
     global_workspace.register_module(llm_provider_key, agent.llm_provider)
     setattr(
         agent,
         "workspace_keys",
         (
-            agent.settings.agent_id,
+            agent_id,
             command_registry_key,
             llm_provider_key,
         ),

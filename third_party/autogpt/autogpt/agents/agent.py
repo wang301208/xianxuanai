@@ -8,7 +8,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-import sentry_sdk
+try:  # pragma: no cover - optional dependency
+    import sentry_sdk  # type: ignore
+except Exception:  # pragma: no cover - optional dependency absent
+    class _SentryStub:
+        @staticmethod
+        def capture_exception(*_args: Any, **_kwargs: Any) -> None:
+            return None
+
+    sentry_sdk = _SentryStub()  # type: ignore[assignment]
 from pydantic import Field
 
 from autogpt.core.configuration import Configurable, LearningConfiguration
@@ -41,7 +49,10 @@ from autogpt.models.context_item import ContextItem
 
 from events.coordination import TaskStatus
 
-from reasoning.decision_engine import ActionDirective
+try:  # pragma: no cover - optional import path
+    from reasoning.decision_engine import ActionDirective
+except ModuleNotFoundError:  # pragma: no cover - fallback for local repo layout
+    from backend.reasoning.decision_engine import ActionDirective
 from backend.memory import LongTermMemory, WorkingMemory
 
 from .base import BaseAgent, BaseAgentConfiguration, BaseAgentSettings
@@ -148,11 +159,20 @@ class Agent(
             config=self.config.learning,
             logger=logger,
         )
-        self._baseline_command_availability = {
-            name: cmd.available
-            for name, cmd in self.command_registry.commands.items()
-            if not callable(cmd.available)
-        }
+        baseline_command_availability: dict[str, Any] = {}
+        commands = getattr(self.command_registry, "commands", None)
+        try:
+            items = commands.items() if commands is not None else []
+        except Exception:
+            items = []
+        try:
+            for name, cmd in items:
+                available = getattr(cmd, "available", None)
+                if available is not None and not callable(available):
+                    baseline_command_availability[name] = available
+        except TypeError:
+            baseline_command_availability = {}
+        self._baseline_command_availability = baseline_command_availability
         self._self_improvement_engine = (
             SelfImprovementEngine(
                 config=self.config.learning,
@@ -180,10 +200,18 @@ class Agent(
 
         memory_path = self.state.long_term_memory_path or f"agents/{self.state.agent_id}/long_term_memory.sqlite"
         self.state.long_term_memory_path = memory_path
-        root_path = getattr(self, "_file_storage", None)
-        base_root = root_path.root if root_path else Path(".")
-        long_term_path = Path(base_root) / memory_path
-        long_term_path.parent.mkdir(parents=True, exist_ok=True)
+        root_storage = getattr(self, "_file_storage", None)
+        base_root = getattr(root_storage, "root", None) if root_storage is not None else None
+        try:
+            base_root_path = Path(base_root) if base_root else Path(".")
+        except TypeError:
+            base_root_path = Path(".")
+
+        long_term_path = base_root_path / memory_path
+        try:
+            long_term_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            logger.debug("Unable to create long-term memory directory.", exc_info=True)
         self.long_term_memory = LongTermMemory(long_term_path)
 
     def report_status(

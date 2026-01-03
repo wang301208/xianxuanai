@@ -13,10 +13,14 @@ from typing import TYPE_CHECKING, List
 from urllib.parse import urlparse
 from zipimport import ZipImportError, zipimporter
 
-import openapi_python_client
+try:  # optional dependency
+    import openapi_python_client  # type: ignore
+    from openapi_python_client.config import Config as OpenAPIConfig
+except ModuleNotFoundError:  # pragma: no cover - optional dependency absent
+    openapi_python_client = None  # type: ignore[assignment]
+    OpenAPIConfig = None  # type: ignore[assignment]
 import requests
 from auto_gpt_plugin_template import AutoGPTPluginTemplate
-from openapi_python_client.config import Config as OpenAPIConfig
 
 if TYPE_CHECKING:
     from autogpt.config import Config
@@ -69,6 +73,11 @@ def fetch_openai_plugins_manifest_and_spec(config: Config) -> dict:
     """
     manifests: dict[str, dict] = {}
     processed_dirs: set[Path] = set()
+
+    if openapi_python_client is None or OpenAPIConfig is None:
+        raise RuntimeError(
+            "openapi-python-client is required to fetch OpenAI plugin manifests/specs."
+        )
 
     # Remote plugins from URLs
     for url in config.plugins_openai:
@@ -282,10 +291,11 @@ def scan_plugins(config: Config) -> List[AutoGPTPluginTemplate]:
     loaded_plugins = []
     # Generic plugins
     plugins_path = Path(config.plugins_dir)
-
-    plugins_config = config.plugins_config
+    plugins_config = getattr(config, "plugins_config", None)
+    if plugins_config is None or not plugins_path.exists():
+        return loaded_plugins
     # Directory-based plugins
-    for plugin_path in [f for f in Path(config.plugins_dir).iterdir() if f.is_dir()]:
+    for plugin_path in [f for f in plugins_path.iterdir() if f.is_dir()]:
         # Avoid going into __pycache__ or other hidden directories
         if plugin_path.name.startswith("__"):
             continue

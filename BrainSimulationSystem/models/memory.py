@@ -13,6 +13,8 @@ import logging
 import asyncio
 import time
 import json
+import threading
+from queue import Queue
 from collections import defaultdict, deque
 import hashlib
 
@@ -1097,8 +1099,27 @@ class MemoryProcess(CognitiveProcess):
             loop = None
 
         if loop and loop.is_running():
-            future = asyncio.run_coroutine_threadsafe(coroutine, loop)
-            return future.result()
+            loop_thread_id = getattr(loop, "_thread_id", None)
+            if loop_thread_id is not None and loop_thread_id != threading.get_ident():
+                future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+                return future.result()
+
+            result_queue: Queue[tuple[bool, Any]] = Queue(maxsize=1)
+
+            def _runner() -> None:
+                try:
+                    result = asyncio.run(coroutine)
+                except Exception as exc:
+                    result_queue.put((False, exc))
+                else:
+                    result_queue.put((True, result))
+
+            thread = threading.Thread(target=_runner, daemon=True)
+            thread.start()
+            ok, payload = result_queue.get()
+            if ok:
+                return payload
+            raise payload  # type: ignore[misc]
 
         new_loop = asyncio.new_event_loop()
         try:

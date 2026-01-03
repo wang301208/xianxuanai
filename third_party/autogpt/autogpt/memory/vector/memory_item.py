@@ -43,8 +43,11 @@ logger = logging.getLogger(__name__)
 MemoryDocType = Literal["webpage", "text_file", "code_file", "agent_history"]
 
 
-class MemoryItem(BaseModel, arbitrary_types_allowed=True):
+class MemoryItem(BaseModel):
     """Memory object containing raw content as well as embeddings"""
+
+    class Config:
+        arbitrary_types_allowed = True
 
     raw_content: str
     summary: str

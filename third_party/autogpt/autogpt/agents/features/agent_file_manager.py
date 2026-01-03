@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Optional
+from uuid import uuid4
 
 from autogpt.file_storage.base import FileStorage
 
@@ -44,7 +45,7 @@ class AgentFileManagerMixin:
 
         state: BaseAgentSettings = getattr(self, "state")
         if not state.agent_id:
-            raise ValueError("Agent must have an ID.")
+            state.agent_id = f"agent-{uuid4()}"
 
         file_storage: FileStorage = kwargs["file_storage"]
         workspace_id = state.workspace_id or state.agent_id

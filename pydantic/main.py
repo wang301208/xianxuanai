@@ -5,7 +5,9 @@ from __future__ import annotations
 import abc
 import json
 from copy import deepcopy
-from typing import Any, Dict, Iterable, Tuple, Type, TypeVar
+import sys
+import types
+from typing import Any, Dict, Iterable, Tuple, Type, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from .decorators import validator  # re-exported for convenience
 from .errors import ValidationError
@@ -47,6 +49,55 @@ def _to_dict(value: Any, *, exclude_none: bool) -> Any:
             for k, v in value.items()
             if not (exclude_none and v is None)
         }
+    return value
+
+
+def _is_basemodel_type(annotation: Any) -> bool:
+    try:
+        return isinstance(annotation, type) and issubclass(annotation, BaseModel)
+    except Exception:
+        return False
+
+
+def _coerce_value(annotation: Any, value: Any) -> Any:
+    if value is None:
+        return None
+
+    if _is_basemodel_type(annotation):
+        if isinstance(value, annotation):
+            return value
+        if isinstance(value, dict):
+            return annotation.parse_obj(value)
+        return value
+
+    origin = get_origin(annotation)
+    if origin in (Union, types.UnionType):
+        args = [arg for arg in get_args(annotation) if arg is not type(None)]  # noqa: E721
+        if len(args) == 1:
+            return _coerce_value(args[0], value)
+        return value
+
+    if origin is list and isinstance(value, list):
+        args = get_args(annotation)
+        item_type = args[0] if args else None
+        if item_type and _is_basemodel_type(item_type):
+            return [item_type.parse_obj(v) if isinstance(v, dict) else v for v in value]
+        return value
+
+    if origin is tuple and isinstance(value, tuple):
+        args = get_args(annotation)
+        item_type = args[0] if args else None
+        if item_type and _is_basemodel_type(item_type):
+            return tuple(item_type.parse_obj(v) if isinstance(v, dict) else v for v in value)
+        return value
+
+    if origin is dict and isinstance(value, dict):
+        args = get_args(annotation)
+        value_type = args[1] if len(args) >= 2 else None
+        if value_type and _is_basemodel_type(value_type):
+            return {k: value_type.parse_obj(v) if isinstance(v, dict) else v for k, v in value.items()}
+        return value
+
     return value
 
 
@@ -101,6 +152,22 @@ class ModelMetaclass(abc.ABCMeta):
         cls = super().__new__(mcls, name, bases, namespace, **kwargs)
         cls.__annotations__ = annotations
         cls.__fields__ = fields
+
+        try:
+            module = sys.modules.get(cls.__module__)
+            globalns = getattr(module, "__dict__", {}) if module is not None else {}
+            resolved = get_type_hints(cls, globalns=globalns, localns=dict(vars(cls)))
+        except Exception:
+            resolved = {}
+
+        if resolved:
+            for field_name, field in cls.__fields__.items():
+                resolved_type = resolved.get(field_name)
+                if resolved_type is None:
+                    continue
+                field.annotation = resolved_type
+                field.outer_type_ = resolved_type
+                field.type_ = resolved_type
         return cls
 
 
@@ -131,7 +198,7 @@ class BaseModel(metaclass=ModelMetaclass):
                         }
                     )
                     continue
-            values[name] = value
+            values[name] = _coerce_value(field.annotation, value)
 
         if errors:
             raise ValidationError(errors)
@@ -152,14 +219,35 @@ class BaseModel(metaclass=ModelMetaclass):
     def model_dump(self, *, exclude_none: bool = False) -> Dict[str, Any]:
         return self.dict(exclude_none=exclude_none)
 
-    def copy(self: T, *, update: Dict[str, Any] | None = None) -> T:
-        data = self.dict()
-        if update:
-            data.update(update)
-        return self.__class__(**data)
+    def copy(
+        self: T,
+        *,
+        deep: bool = False,
+        update: Dict[str, Any] | None = None,
+    ) -> T:
+        """Return a copy of this model.
 
-    def model_copy(self: T, *, update: Dict[str, Any] | None = None) -> T:
-        return self.copy(update=update)
+        This compatibility layer supports the common ``copy(deep=True)`` usage
+        found throughout the upstream AutoGPT codebase.
+        """
+
+        if deep:
+            cloned: T = _deep_copy(self)
+        else:
+            cloned = self.__class__(**self.dict())
+
+        if update:
+            for key, value in update.items():
+                setattr(cloned, key, value)
+        return cloned
+
+    def model_copy(
+        self: T,
+        *,
+        deep: bool = False,
+        update: Dict[str, Any] | None = None,
+    ) -> T:
+        return self.copy(deep=deep, update=update)
 
     def json(self, *, encoder=None, exclude_none: bool = False, **kwargs: Any) -> str:
         def default(value: Any) -> Any:
@@ -214,4 +302,3 @@ class BaseSettings(BaseModel):
     """Alias for ``BaseModel`` used in a few configuration helpers."""
 
     pass
-

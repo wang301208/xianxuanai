@@ -234,8 +234,18 @@ class WholeBrainAgentAdapter:
 
         personality_payload = asdict(result.personality)
 
+        backend_choice = (
+            getattr(self._agent, "brain_backend", None)
+            or getattr(getattr(self._agent, "config", None), "brain_backend", None)
+        )
+        backend_label = (
+            backend_choice.value
+            if hasattr(backend_choice, "value")
+            else (str(backend_choice) if backend_choice is not None else "whole_brain")
+        )
+
         thoughts: Dict[str, Any] = {
-            "backend": "whole_brain",
+            "backend": backend_label,
             "text": (result.thoughts.summary if result.thoughts and result.thoughts.summary else plan_summary)
             or result.intent.intention,
             "reasoning": "; ".join(result.thoughts.plan) if result.thoughts else "; ".join(plan_list),

@@ -125,8 +125,18 @@ class BrainSimulationSystemAdapter:
                 logger.debug("Failed to stop BrainSimulationSystem background loop.", exc_info=True)
 
     def attach_knowledge_base(self, knowledge_base: Any) -> None:  # pragma: no cover - optional hook
-        if hasattr(self._brain, "knowledge_base"):
-            self._brain.knowledge_base = knowledge_base
+        attach = getattr(self._brain, "attach_knowledge_base", None)
+        if callable(attach):
+            try:
+                attach(knowledge_base)
+            except TypeError:
+                attach(knowledge_base=knowledge_base)
+            return
+
+        try:
+            setattr(self._brain, "knowledge_base", knowledge_base)
+        except Exception:
+            logger.debug("Unable to attach knowledge base to BrainSimulationSystem.", exc_info=True)
 
     def update_config(
         self,

@@ -4,7 +4,10 @@ from __future__ import annotations
 import math
 from typing import Iterable, Sequence, TYPE_CHECKING
 
-import torch
+try:  # pragma: no cover - optional dependency
+    import torch  # type: ignore
+except Exception:  # pragma: no cover - optional dependency absent
+    torch = None  # type: ignore
 
 if TYPE_CHECKING:  # pragma: no cover - import for type checkers only
     from autogpt.agents.base import BaseAgent
@@ -49,6 +52,9 @@ def _encode_numeric_series(
 
 def build_brain_inputs(agent: "BaseAgent", dim: int) -> tuple[torch.Tensor, torch.Tensor]:
     """Construct observation and memory tensors for the transformer brain."""
+
+    if torch is None:  # pragma: no cover - optional dependency
+        raise RuntimeError("PyTorch is required to build transformer brain inputs.")
 
     observation = torch.zeros(dim, dtype=torch.float32)
     memory_ctx = torch.zeros(dim, dtype=torch.float32)

@@ -36,7 +36,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 class BrainAdapterConfiguration(SystemConfiguration):
     """Configuration wrapper for the simple cognition adapter."""
 
-    backend: BrainBackend = Field(default=BrainBackend.WHOLE_BRAIN)
+    backend: BrainBackend = Field(default=BrainBackend.BRAIN_SIMULATION)
     whole_brain: WholeBrainConfig = Field(default_factory=WholeBrainConfig)
     brain_simulation: BrainSimulationConfig = Field(default_factory=BrainSimulationConfig)
 
@@ -104,7 +104,8 @@ class SimpleBrainAdapter(Configurable):
                     getattr(self._serving_config, "model_name", "transformer-brain"),
                 )
                 self._register_serving_service()
-        backend_choice = getattr(self._configuration, "backend", BrainBackend.WHOLE_BRAIN)
+        backend_choice = getattr(self._configuration, "backend", BrainBackend.BRAIN_SIMULATION)
+        self._backend: BrainBackend = backend_choice
         self._brain: BrainBackendProtocol
         try:
             self._brain = create_brain_backend(
@@ -117,6 +118,7 @@ class SimpleBrainAdapter(Configurable):
                 "Falling back to WholeBrain backend for SimpleBrainAdapter (%s).",
                 exc,
             )
+            self._backend = BrainBackend.WHOLE_BRAIN
             self._brain = create_brain_backend(
                 BrainBackend.WHOLE_BRAIN,
                 whole_brain_config=self._configuration.whole_brain,
@@ -279,7 +281,7 @@ class SimpleBrainAdapter(Configurable):
         plan_steps = brain_result.intent.plan or ["clarify_objective"]
         plan_dict = {
             "task_list": self._plan_steps_to_tasks(plan_steps, agent_goals),
-            "backend": "whole_brain",
+            "backend": self._backend.value,
             "intention": brain_result.intent.intention,
             "confidence": float(brain_result.intent.confidence),
             "thoughts": metadata,
@@ -335,7 +337,7 @@ class SimpleBrainAdapter(Configurable):
         payload = {
             "next_ability": ability_name,
             "ability_arguments": ability_args,
-            "backend": "whole_brain",
+            "backend": self._backend.value,
             "confidence": float(brain_result.intent.confidence),
             "plan": list(brain_result.intent.plan),
             "reasoning": metadata.get("analysis"),
@@ -518,7 +520,7 @@ class SimpleBrainAdapter(Configurable):
             }
 
         payload = {
-            "backend": "whole_brain",
+            "backend": self._backend.value,
             "intention": result.intent.intention,
             "plan": list(result.intent.plan),
             "confidence": float(result.intent.confidence),
