@@ -4,6 +4,7 @@ import asyncio
 import heapq
 import os
 import threading
+import inspect
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from .task_graph import TaskGraph
@@ -114,7 +115,7 @@ class Scheduler:
 
     # ------------------------------------------------------------------
     async def submit(
-        self, graph: TaskGraph, worker: Callable[[str, str], Awaitable[Any]]
+        self, graph: TaskGraph, worker: Callable[[str, str], Awaitable[Any]] | Callable[[str, str], Any]
     ) -> Dict[str, Any]:
         """Schedule tasks on available agents and execute them in parallel.
 
@@ -160,16 +161,21 @@ class Scheduler:
                     try:
                         with self._lock:
                             self._update_tasks(agent, 1)
-                        res = await worker(agent, task.skill)
-                        results[task_id] = res
-                        with self._lock:
-                            self._task_counts[agent] += 1
-                        for dep in dependents.get(task_id, []):
-                            indegree[dep] -= 1
-                            if indegree[dep] == 0:
-                                queue.put_nowait(dep)
-                        if self._task_callback:
-                            self._task_callback(queue.qsize())
+                        try:
+                            res = worker(agent, task.skill)
+                            if inspect.isawaitable(res):
+                                res = await res
+                            results[task_id] = res
+                            with self._lock:
+                                self._task_counts[agent] += 1
+                            for dep in dependents.get(task_id, []):
+                                indegree[dep] -= 1
+                                if indegree[dep] == 0:
+                                    queue.put_nowait(dep)
+                            if self._task_callback:
+                                self._task_callback(queue.qsize())
+                        except Exception as exc:
+                            results[task_id] = exc
                     finally:
                         with self._lock:
                             self._update_tasks(agent, -1)

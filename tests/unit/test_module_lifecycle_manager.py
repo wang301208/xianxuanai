@@ -60,6 +60,41 @@ def test_lifecycle_manager_suggests_unload_for_idle_loaded_module(tmp_path) -> N
     lifecycle.close()
 
 
+def test_lifecycle_manager_updates_last_used_from_module_used(tmp_path) -> None:
+    from backend.capability import register_module
+    from backend.capability.runtime_loader import RuntimeModuleManager
+
+    register_module("hot_mod", lambda: {"ok": True})
+
+    bus = InMemoryEventBus()
+    mgr = RuntimeModuleManager(bus)
+    lifecycle = ModuleLifecycleManager(
+        event_bus=bus,  # type: ignore[arg-type]
+        module_manager=mgr,
+        enabled=True,
+        disabled_state_path=tmp_path / "disabled.json",
+        eval_interval_secs=0.0,
+        unload_idle_secs=999999.0,
+        auto_unload=False,
+    )
+
+    mgr.load("hot_mod")
+    bus.join()
+    before = next((item for item in lifecycle.snapshot(limit=10) if item.get("name") == "hot_mod"), None)
+    assert before is not None
+    before_ts = float(before.get("last_used_ts") or 0.0)
+
+    bus.publish("module.used", {"time": before_ts + 100.0, "module": "hot_mod", "cached": True})
+    bus.join()
+    after = next((item for item in lifecycle.snapshot(limit=10) if item.get("name") == "hot_mod"), None)
+    assert after is not None
+    after_ts = float(after.get("last_used_ts") or 0.0)
+
+    assert after_ts >= before_ts + 100.0
+
+    lifecycle.close()
+
+
 def test_lifecycle_manager_can_disable_module_via_event(tmp_path) -> None:
     from backend.capability import is_module_enabled, register_module
     from backend.capability.runtime_loader import RuntimeModuleManager

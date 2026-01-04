@@ -61,3 +61,38 @@ def test_runtime_module_manager_resolves_dependencies():
     assert "dep" in mgr.loaded_modules()
     assert "main" in mgr.loaded_modules()
     assert main_mod.initialized and dep_mod.initialized
+
+
+def test_runtime_module_manager_emits_module_used_events() -> None:
+    from modules.events import InMemoryEventBus
+
+    name = "dummy_runtime_used_events"
+    register_module(name, lambda: {"name": name})
+
+    bus = InMemoryEventBus()
+    used_events = []
+    bus.subscribe("module.used", lambda e: used_events.append(e))
+
+    mgr = RuntimeModuleManager(bus)
+    mgr.load(name)
+    mgr.load(name)  # cached
+    bus.join()
+
+    assert len(used_events) >= 2
+    assert used_events[0]["module"] == name
+    assert used_events[0].get("cached") is False
+    assert used_events[1]["module"] == name
+    assert used_events[1].get("cached") is True
+
+
+def test_runtime_module_manager_update_does_not_prune_on_unknown_required() -> None:
+    name = "dummy_runtime_keep_loaded"
+    register_module(name, lambda: {"name": name})
+
+    mgr = RuntimeModuleManager()
+    mgr.load(name)
+
+    # When the requested names are unknown/disabled, update() should avoid
+    # unloading everything as a side-effect.
+    mgr.update(["this_is_not_a_registered_module_name"], prune=True)
+    assert name in mgr.loaded_modules()

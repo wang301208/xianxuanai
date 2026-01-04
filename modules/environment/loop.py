@@ -224,6 +224,7 @@ class ActionPerceptionLoop:
             importance = float(reward) if reward is not None else 0.0
         except (TypeError, ValueError):
             importance = 0.0
+        activation = max(0.0, abs(importance))
 
         try:
             global_workspace.publish_message(
@@ -233,9 +234,9 @@ class ActionPerceptionLoop:
                     payload=payload,
                     summary=summary,
                     tags=("environment", "perception"),
-                    importance=max(0.0, abs(importance)),
+                    importance=activation,
                 ),
-                attention=reward,
+                attention=activation,
                 propagate=True,
             )
         except Exception:  # pragma: no cover - defensive guard

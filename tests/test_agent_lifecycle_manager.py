@@ -8,11 +8,24 @@ sys.path.insert(0, str(ROOT / "modules"))
 
 # Stub dependencies required by events module
 sys.modules.setdefault("autogpts", types.ModuleType("autogpts"))
+sys.modules.setdefault("third_party", types.ModuleType("third_party"))
+third_party_pkg = sys.modules["third_party"]
+third_party_pkg.__path__ = getattr(third_party_pkg, "__path__", [])  # type: ignore[attr-defined]
 sys.modules.setdefault("third_party.autogpt", types.ModuleType("third_party.autogpt"))
-sys.modules.setdefault(
-    "third_party.autogpt.autogpt", types.ModuleType("third_party.autogpt.autogpt")
-)
+third_party_autogpt_pkg = sys.modules["third_party.autogpt"]
+third_party_autogpt_pkg.__path__ = getattr(third_party_autogpt_pkg, "__path__", [])  # type: ignore[attr-defined]
+sys.modules.setdefault("third_party.autogpt.autogpt", types.ModuleType("third_party.autogpt.autogpt"))
+third_party_autogpt_autogpt_pkg = sys.modules["third_party.autogpt.autogpt"]
+third_party_autogpt_autogpt_pkg.__path__ = getattr(third_party_autogpt_autogpt_pkg, "__path__", [])  # type: ignore[attr-defined]
+try:
+    third_party_autogpt_autogpt_pkg.__path__.append(str(ROOT / "third_party" / "autogpt" / "autogpt"))  # type: ignore[attr-defined]
+except Exception:
+    pass
 core_mod = types.ModuleType("third_party.autogpt.autogpt.core")
+try:
+    core_mod.__path__ = [str(ROOT / "third_party" / "autogpt" / "autogpt" / "core")]  # type: ignore[attr-defined]
+except Exception:
+    core_mod.__path__ = []  # type: ignore[attr-defined]
 errors_mod = types.ModuleType("third_party.autogpt.autogpt.core.errors")
 class _AutoGPTError(Exception):
     pass
@@ -56,6 +69,12 @@ class DummyWatcher:
 
 
 class DummyWorkspace:
+    def register_module(self, *a, **k):
+        pass
+
+    def unregister_module(self, *a, **k):
+        pass
+
     def broadcast(self, *a, **k):
         pass
 
@@ -64,27 +83,50 @@ def _load_manager(monkeypatch):
     monkeypatch.setitem(sys.modules, "agent_factory", types.SimpleNamespace(
         create_agent_from_blueprint=lambda *a, **k: object()
     ))
-    monkeypatch.setitem(sys.modules, "autogpt", types.SimpleNamespace())
-    monkeypatch.setitem(sys.modules, "autogpt.config", types.SimpleNamespace(Config=object))
+    capability_pkg = types.ModuleType("capability")
+    capability_pkg.__path__ = []  # type: ignore[attr-defined]
+    capability_pkg.refresh_skills_from_directory = lambda *_, **__: None  # type: ignore[attr-defined]
+    capability_pkg.get_skill_registry = lambda: types.SimpleNamespace(list_specs=lambda: [])  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "capability", capability_pkg)
+    # Stub third_party AutoGPT imports referenced by AgentLifecycleManager.
+    monkeypatch.setitem(sys.modules, "third_party.autogpt.autogpt.config", types.SimpleNamespace(Config=object))
+    resource_pkg = types.ModuleType("third_party.autogpt.autogpt.core.resource")
+    resource_pkg.__path__ = []  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "third_party.autogpt.autogpt.core.resource", resource_pkg)
     monkeypatch.setitem(
         sys.modules,
-        "autogpt.core.resource.model_providers",
+        "third_party.autogpt.autogpt.core.resource.model_providers",
         types.SimpleNamespace(ChatModelProvider=object),
     )
+    file_storage_pkg = types.ModuleType("third_party.autogpt.autogpt.file_storage")
+    file_storage_pkg.__path__ = []  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "third_party.autogpt.autogpt.file_storage", file_storage_pkg)
     monkeypatch.setitem(
         sys.modules,
-        "autogpt.file_storage.base",
+        "third_party.autogpt.autogpt.file_storage.base",
         types.SimpleNamespace(FileStorage=object),
     )
+    agents_pkg = types.ModuleType("third_party.autogpt.autogpt.agents")
+    agents_pkg.__path__ = []  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "third_party.autogpt.autogpt.agents", agents_pkg)
     monkeypatch.setitem(
         sys.modules,
-        "autogpt.agents.agent",
+        "third_party.autogpt.autogpt.agents.agent",
         types.SimpleNamespace(Agent=object),
     )
     monkeypatch.setitem(
         sys.modules,
         "monitoring",
         types.SimpleNamespace(
+            ResourceScheduler=type(
+                "ResourceScheduler",
+                (),
+                {
+                    "__init__": lambda self, *a, **k: None,
+                    "register_module": lambda self, *a, **k: None,
+                    "close": lambda self, *a, **k: None,
+                },
+            ),
             SystemMetricsCollector=DummyMetrics,
             global_workspace=DummyWorkspace(),
         ),
@@ -122,7 +164,7 @@ def _load_manager(monkeypatch):
 
     class _DummyGoalGenerator:
         def __init__(self, *a, **k):
-            pass
+            self.listener = None
 
         def generate(self):
             return None
@@ -153,6 +195,38 @@ def _load_manager(monkeypatch):
         "backend.execution.goal_generator",
         types.SimpleNamespace(GoalGenerator=_DummyGoalGenerator),
     )
+    class _DummyConductor:
+        def __init__(self, *a, **k):
+            self._decision_engines = {}
+        def unregister_agent(self, *a, **k):
+            pass
+        def close(self):
+            pass
+    monkeypatch.setitem(
+        sys.modules,
+        "backend.execution.conductor",
+        types.SimpleNamespace(AgentConductor=_DummyConductor),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "backend.execution.adaptive_controller",
+        types.SimpleNamespace(
+            AdaptiveResourceController=type(
+                "AdaptiveResourceController",
+                (),
+                {
+                    "__init__": lambda self, *a, **k: None,
+                    "shutdown": lambda self: None,
+                    "record_extra_metrics": lambda self, *a, **k: None,
+                    "record_module_metric": lambda self, *a, **k: None,
+                    "update": lambda self, *a, **k: None,
+                },
+            ),
+            HybridArchitectureManager=types.SimpleNamespace(from_runtime=lambda **_: None),
+            GAConfig=type("GAConfig", (), {"__init__": lambda self, *a, **k: None}),
+            ModuleAdapter=type("ModuleAdapter", (), {"__init__": lambda self, *a, **k: None}),
+        ),
+    )
     monkeypatch.setitem(
         sys.modules,
         "world_model",
@@ -167,7 +241,10 @@ def _load_manager(monkeypatch):
         def __init__(self, *a, **k):
             pass
 
-        def update(self, tasks):
+        def update(self, *_: object, **__: object):
+            pass
+
+        def ensure(self, *_: object, **__: object):
             pass
 
     monkeypatch.setitem(
@@ -195,6 +272,21 @@ def _load_manager(monkeypatch):
         types.SimpleNamespace(
             KnowledgeConsolidator=_DummyKnowledgeConsolidator,
             MemoryRouter=_DummyMemoryRouter,
+        ),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "modules.knowledge",
+        types.SimpleNamespace(
+            KnowledgeUpdatePipeline=type(
+                "KnowledgeUpdatePipeline",
+                (),
+                {
+                    "__init__": lambda self, *a, **k: None,
+                    "process_task_event": lambda self, *a, **k: None,
+                },
+            ),
+            RuntimeKnowledgeImporter=type("RuntimeKnowledgeImporter", (), {"__init__": lambda self, *a, **k: None}),
         ),
     )
 

@@ -24,6 +24,69 @@ logger = logging.getLogger(__name__)
 
 CallableTask = Callable[..., Any]
 
+try:  # Optional dependency
+    import psutil  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    psutil = None  # type: ignore
+
+def _torch_gpu_available() -> bool:
+    try:
+        import torch  # type: ignore
+
+        return bool(torch.cuda.is_available())
+    except Exception:
+        return False
+
+
+def _gpu_memory_pressures() -> list[float]:
+    """Return per-GPU memory pressure ratios (used/total) if available."""
+
+    try:
+        import torch  # type: ignore
+    except Exception:
+        return []
+    if not bool(getattr(getattr(torch, "cuda", None), "is_available", lambda: False)()):
+        return []
+    try:
+        count = int(getattr(torch.cuda, "device_count", lambda: 0)() or 0)
+    except Exception:
+        count = 0
+    pressures: list[float] = []
+    for idx in range(max(0, count)):
+        free = None
+        total = None
+        try:
+            free, total = torch.cuda.mem_get_info(idx)
+        except Exception:
+            try:
+                torch.cuda.set_device(idx)
+                free, total = torch.cuda.mem_get_info()
+            except Exception:
+                continue
+        try:
+            free_f = float(free or 0.0)
+            total_f = float(total or 0.0)
+        except Exception:
+            continue
+        if total_f <= 0:
+            continue
+        used_ratio = (total_f - free_f) / total_f
+        pressures.append(max(0.0, min(1.0, float(used_ratio))))
+    return pressures
+
+
+def _gpu_overloaded(threshold: float) -> bool:
+    """Return True when all visible GPUs exceed the provided pressure threshold."""
+
+    pressures = _gpu_memory_pressures()
+    if not pressures:
+        return False
+    try:
+        limit = max(0.0, min(1.0, float(threshold)))
+    except Exception:
+        limit = 0.9
+    return all(p >= limit for p in pressures)
+
 
 class TaskPriority(enum.IntEnum):
     """Enumerate priority bands for managed work."""
@@ -34,16 +97,67 @@ class TaskPriority(enum.IntEnum):
     CRITICAL = 40
 
 
+class AdjustableSemaphore:
+    """Semaphore-like concurrency limiter with a mutable upper bound."""
+
+    def __init__(self, limit: int) -> None:
+        self._cond = threading.Condition()
+        self._limit = max(1, int(limit))
+        self._in_use = 0
+
+    @property
+    def limit(self) -> int:
+        with self._cond:
+            return int(self._limit)
+
+    @property
+    def in_use(self) -> int:
+        with self._cond:
+            return int(self._in_use)
+
+    def set_limit(self, limit: int) -> None:
+        with self._cond:
+            self._limit = max(1, int(limit))
+            self._cond.notify_all()
+
+    def acquire(self, blocking: bool = True, timeout: float | None = None) -> bool:
+        if not blocking and timeout is not None:
+            raise ValueError("can't specify a timeout for a non-blocking acquire")
+
+        deadline = None if timeout is None else time.monotonic() + float(timeout)
+        with self._cond:
+            while self._in_use >= self._limit:
+                if not blocking:
+                    return False
+                if deadline is None:
+                    self._cond.wait()
+                    continue
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._cond.wait(remaining)
+            self._in_use += 1
+            return True
+
+    def release(self) -> None:
+        with self._cond:
+            if self._in_use <= 0:
+                self._in_use = 0
+                return
+            self._in_use -= 1
+            self._cond.notify()
+
+
 @dataclass
 class DeviceConfig:
     """Execution resource configuration."""
 
     executor: concurrent.futures.Executor
     max_workers: int
-    semaphore: threading.Semaphore = field(init=False)
+    semaphore: AdjustableSemaphore = field(init=False)
 
     def __post_init__(self) -> None:
-        self.semaphore = threading.Semaphore(self.max_workers)
+        self.semaphore = AdjustableSemaphore(self.max_workers)
 
 
 @dataclass
@@ -149,6 +263,12 @@ class TaskManager:
         self._stop_event = threading.Event()
         self._dispatcher_thread = threading.Thread(target=self._dispatch_loop, daemon=True, name="TaskManager")
         self._default_workers = default_cpu_workers or max(2, (os.cpu_count() or 2) // 2)
+        self._process = None
+        if psutil is not None:
+            try:
+                self._process = psutil.Process(os.getpid())
+            except Exception:
+                self._process = None
         self.configure_device("cpu", max_workers=self._default_workers)
         self.start()
 
@@ -211,14 +331,88 @@ class TaskManager:
             worker_count = max_workers or getattr(executor, "_max_workers", 1) or 1
 
         config = DeviceConfig(executor=executor, max_workers=worker_count)
+        old_executor: concurrent.futures.Executor | None = None
         with self._lock:
             existing = self._devices.get(name)
-            self._devices[name] = config
-        if existing:
+            if existing is None:
+                self._devices[name] = config
+            else:
+                old_executor = existing.executor
+                old_max_workers = int(existing.max_workers)
+                old_limit = int(existing.semaphore.limit)
+                existing.executor = executor
+                existing.max_workers = worker_count
+                new_limit = worker_count if old_limit == old_max_workers else min(old_limit, worker_count)
+                existing.semaphore.set_limit(new_limit)
+
+        if old_executor is not None:
             try:
-                existing.executor.shutdown(wait=False)
+                old_executor.shutdown(wait=False)
             except Exception:  # pragma: no cover - best effort cleanup
                 pass
+
+    def set_device_concurrency_limit(
+        self,
+        name: str,
+        limit: int,
+        *,
+        reason: str | None = None,
+        source: str | None = None,
+    ) -> int:
+        """Adjust the per-device concurrency gate without rebuilding executors."""
+
+        name = name or "cpu"
+        try:
+            desired = int(limit)
+        except Exception as exc:
+            raise TypeError("limit must be an int") from exc
+
+        self._ensure_device(name)
+        changed = False
+        previous = 0
+        max_workers = 0
+        active = 0
+        with self._lock:
+            cfg = self._devices.get(name)
+            if cfg is None:
+                return 0
+            previous = int(cfg.semaphore.limit)
+            max_workers = int(cfg.max_workers)
+            desired = max(1, min(desired, max_workers))
+            if desired != previous:
+                cfg.semaphore.set_limit(desired)
+                changed = True
+            active = int(cfg.semaphore.in_use)
+
+        if changed and self._event_bus:
+            payload: Dict[str, Any] = {
+                "time": time.time(),
+                "device": name,
+                "max_workers": max_workers,
+                "previous_limit": previous,
+                "concurrency_limit": desired,
+                "active": active,
+            }
+            if reason:
+                payload["reason"] = str(reason)
+            if source:
+                payload["source"] = str(source)
+            try:
+                self._event_bus.publish("task_manager.device_concurrency_updated", payload)
+            except Exception:  # pragma: no cover - optional telemetry
+                logger.debug("Failed to publish concurrency update", exc_info=True)
+
+        return int(desired)
+
+    def device_concurrency_limit(self, name: str) -> int:
+        """Return the current concurrency limit for *name* (best-effort)."""
+
+        name = name or "cpu"
+        with self._lock:
+            cfg = self._devices.get(name)
+            if cfg is None:
+                return 0
+            return int(cfg.semaphore.limit)
 
     # ------------------------------------------------------------------
     # Submission
@@ -249,6 +443,12 @@ class TaskManager:
         scheduled_at = time.time()
         task_id = str(uuid.uuid4())
         future: concurrent.futures.Future = concurrent.futures.Future()
+        meta_dict = dict(metadata or {})
+        resolved_device = self._resolve_device(
+            device,
+            priority=priority_value,
+            metadata=meta_dict,
+        )
 
         task = ScheduledTask(
             task_id=task_id,
@@ -257,15 +457,15 @@ class TaskManager:
             priority=priority_value,
             deadline=deadline_value,
             created_at=scheduled_at,
-            device=device,
+            device=resolved_device,
             func=func,
             args=tuple(args),
             kwargs=dict(kwargs),
             future=future,
-            metadata=dict(metadata or {}),
+            metadata=meta_dict,
         )
 
-        self._ensure_device(device)
+        self._ensure_device(resolved_device)
 
         with self._lock:
             self._tasks[task_id] = task
@@ -283,12 +483,59 @@ class TaskManager:
                     "category": category,
                     "priority": priority_value,
                     "deadline": deadline_value,
-                    "device": device,
+                    "device": resolved_device,
                     "metadata": task.metadata,
                 },
             )
 
         return TaskHandle(task, self)
+
+    def _resolve_device(self, device: str, *, priority: int, metadata: Dict[str, Any]) -> str:
+        requested = (device or "cpu").strip().lower()
+        if requested not in {"auto", "any", "best"}:
+            return requested or "cpu"
+
+        gpu_capable = bool(metadata.get("gpu_capable") or metadata.get("prefer_gpu"))
+        gpu_required = bool(metadata.get("gpu_required"))
+        allow_cpu_fallback = bool(metadata.get("allow_cpu_fallback", True))
+
+        threshold_raw = metadata.get("gpu_overload_threshold", os.getenv("TASK_MANAGER_GPU_OVERLOAD_THRESHOLD", "0.9"))
+        try:
+            gpu_overload_threshold = float(threshold_raw)
+        except Exception:
+            gpu_overload_threshold = 0.9
+
+        if not gpu_capable and not gpu_required:
+            return "cpu"
+
+        if not _torch_gpu_available():
+            if gpu_required and not allow_cpu_fallback:
+                raise RuntimeError("Task requires GPU but no CUDA device is available.")
+            return "cpu"
+
+        self._ensure_gpu_device()
+        gpu_overloaded = _gpu_overloaded(gpu_overload_threshold)
+
+        if gpu_required:
+            return "gpu"
+        if gpu_overloaded and allow_cpu_fallback:
+            return "cpu"
+        return "gpu"
+
+    def _ensure_gpu_device(self) -> None:
+        with self._lock:
+            if "gpu" in self._devices:
+                return
+        if not _torch_gpu_available():
+            return
+        workers = 1
+        try:
+            import torch  # type: ignore
+
+            workers = int(torch.cuda.device_count() or 1)
+        except Exception:
+            workers = 1
+        self.configure_device("gpu", max_workers=max(1, workers))
 
     def queue_depth(self) -> int:
         with self._lock:
@@ -324,67 +571,105 @@ class TaskManager:
                 logger.debug("Resource signal emission failed", exc_info=True)
 
     def _dispatch_loop(self) -> None:
+        scan_limit = int(os.getenv("TASK_MANAGER_DISPATCH_SCAN_LIMIT", "32") or 32)
+        scan_limit = max(1, min(scan_limit, 512))
+        idle_sleep = float(os.getenv("TASK_MANAGER_DISPATCH_IDLE_SLEEP", "0.01") or 0.01)
+        idle_sleep = max(0.0, min(idle_sleep, 0.5))
+
         while not self._stop_event.is_set():
-            try:
-                _, _, _, _, task = self._queue.get(timeout=0.5)
-            except queue.Empty:
-                continue
+            deferred: list[ScheduledTask] = []
+            dispatched = False
 
-            if task is self._SENTINEL:
-                self._queue.task_done()
-                break
+            for scan in range(scan_limit):
+                try:
+                    timeout = 0.5 if scan == 0 else 0.0
+                    _, _, _, _, task = self._queue.get(timeout=timeout)
+                except queue.Empty:
+                    break
 
-            if not isinstance(task, ScheduledTask):
-                self._queue.task_done()
-                continue
+                if task is self._SENTINEL:
+                    self._queue.task_done()
+                    return
 
-            if task.cancelled:
-                self._queue.task_done()
-                if not task.future.done():
-                    task.future.cancel()
+                if not isinstance(task, ScheduledTask):
+                    self._queue.task_done()
+                    continue
+
+                if task.cancelled:
+                    self._queue.task_done()
+                    if not task.future.done():
+                        task.future.cancel()
+                    with self._lock:
+                        self._tasks.pop(task.task_id, None)
+                        depth = self._queue.qsize() + self._active
+                    self._notify_depth(depth)
+                    if self._event_bus:
+                        self._event_bus.publish(
+                            "task_manager.task_cancelled",
+                            {"task_id": task.task_id, "name": task.name, "category": task.category},
+                        )
+                    continue
+
+                device = task.device
                 with self._lock:
-                    self._tasks.pop(task.task_id, None)
+                    device_cfg = self._devices.get(device)
+                if device_cfg is None:
+                    self._ensure_device(device)
+                    with self._lock:
+                        device_cfg = self._devices[device]
+
+                assert device_cfg is not None
+                acquired = device_cfg.semaphore.acquire(blocking=False)
+                if not acquired:
+                    deferred.append(task)
+                    self._queue.task_done()
+                    continue
+
+                with self._lock:
+                    self._active += 1
                     depth = self._queue.qsize() + self._active
                 self._notify_depth(depth)
+                self._queue.task_done()
+
                 if self._event_bus:
                     self._event_bus.publish(
-                        "task_manager.task_cancelled",
-                        {"task_id": task.task_id, "name": task.name, "category": task.category},
+                        "task_manager.task_started",
+                        {
+                            "task_id": task.task_id,
+                            "name": task.name,
+                            "category": task.category,
+                            "device": device,
+                            "priority": task.priority,
+                        },
                     )
-                continue
 
-            device = task.device
-            with self._lock:
-                device_cfg = self._devices.get(device)
-            if device_cfg is None:
-                self._ensure_device(device)
+                device_cfg.executor.submit(self._run_task, device_cfg, task)
+                dispatched = True
+                break
+
+            if deferred:
                 with self._lock:
-                    device_cfg = self._devices[device]
+                    for task in deferred:
+                        if task.cancelled or task.task_id not in self._tasks:
+                            continue
+                        entry = (
+                            -int(task.priority),
+                            float(task.deadline),
+                            float(task.created_at),
+                            next(self._order_counter),
+                            task,
+                        )
+                        self._queue.put(entry)
 
-            assert device_cfg is not None
-            device_cfg.semaphore.acquire()
-            with self._lock:
-                self._active += 1
-                depth = self._queue.qsize() + self._active
-            self._notify_depth(depth)
-            self._queue.task_done()
-
-            if self._event_bus:
-                self._event_bus.publish(
-                    "task_manager.task_started",
-                    {
-                        "task_id": task.task_id,
-                        "name": task.name,
-                        "category": task.category,
-                        "device": device,
-                        "priority": task.priority,
-                    },
-                )
-
-            device_cfg.executor.submit(self._run_task, device_cfg, task)
+            if not dispatched and idle_sleep > 0:
+                time.sleep(idle_sleep)
 
     def _run_task(self, device_cfg: DeviceConfig, task: ScheduledTask) -> None:
         status = "completed"
+        started_at = time.time()
+        started_perf = time.perf_counter()
+        started_cpu = _thread_cpu_time()
+        started_rss = _process_rss_bytes(self._process)
         try:
             autofix_cfg = None
             if isinstance(task.metadata, dict):
@@ -414,6 +699,21 @@ class TaskManager:
                 task.future.set_exception(exc)
             logger.debug("Task %s failed", task.name, exc_info=True)
         finally:
+            ended_at = time.time()
+            ended_perf = time.perf_counter()
+            ended_cpu = _thread_cpu_time()
+            ended_rss = _process_rss_bytes(self._process)
+
+            duration_s = max(0.0, ended_perf - started_perf)
+            cpu_time_s = max(0.0, ended_cpu - started_cpu)
+            cpu_percent = 0.0
+            if duration_s > 0.0:
+                cpu_percent = max(0.0, (cpu_time_s / duration_s) * 100.0)
+
+            rss_delta_bytes = None
+            if started_rss is not None and ended_rss is not None:
+                rss_delta_bytes = int(ended_rss - started_rss)
+
             device_cfg.semaphore.release()
             with self._lock:
                 self._active = max(0, self._active - 1)
@@ -422,12 +722,22 @@ class TaskManager:
             self._notify_depth(depth)
             if self._event_bus:
                 payload = {
+                    "time": ended_at,
+                    "started_at": started_at,
+                    "duration_s": duration_s,
                     "task_id": task.task_id,
                     "name": task.name,
                     "category": task.category,
                     "status": status,
                     "device": task.device,
                     "metadata": task.metadata,
+                    "runtime": {
+                        "cpu_time_s": cpu_time_s,
+                        "cpu_percent": cpu_percent,
+                        "rss_start_bytes": started_rss,
+                        "rss_end_bytes": ended_rss,
+                        "rss_delta_bytes": rss_delta_bytes,
+                    },
                 }
                 if status != "completed" and not task.future.cancelled():
                     exc = task.future.exception(timeout=0)
@@ -473,3 +783,36 @@ class TaskManager:
 
 
 __all__ = ["TaskManager", "TaskPriority", "TaskHandle"]
+
+
+def _thread_cpu_time() -> float:
+    """Return CPU time for the current worker thread."""
+
+    thread_time = getattr(time, "thread_time", None)
+    if callable(thread_time):
+        try:
+            return float(thread_time())
+        except Exception:
+            pass
+    try:
+        return float(time.process_time())
+    except Exception:
+        return 0.0
+
+
+def _process_rss_bytes(process: Any | None) -> int | None:
+    """Best-effort RSS measurement for the current process."""
+
+    if process is None:
+        return None
+    memory_info = getattr(process, "memory_info", None)
+    if not callable(memory_info):
+        return None
+    try:
+        info = memory_info()
+        rss = getattr(info, "rss", None)
+        if rss is None:
+            return None
+        return int(rss)
+    except Exception:
+        return None

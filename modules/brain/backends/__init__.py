@@ -99,12 +99,14 @@ class BrainSimulationSystemAdapter:
                 "Failed to initialise BrainSimulationSystem"
             ) from exc
 
-        self._dt = float(payload.get("dt", 100.0))
+        self._dt = max(float(payload.get("dt", 100.0)), 1e-3)
+        self._auto_background = bool(payload.get("auto_background"))
         self._metadata = {
             "profile": payload.get("profile"),
             "stage": payload.get("stage"),
+            "dt": self._dt,
         }
-        if payload.get("auto_background"):
+        if self._auto_background:
             try:
                 self._brain.start_continuous_simulation(self._dt)
             except Exception:  # pragma: no cover - non-critical best effort
@@ -144,23 +146,82 @@ class BrainSimulationSystemAdapter:
         *,
         overrides: Mapping[str, Any] | None = None,
     ) -> None:  # pragma: no cover - optional hook
+        dt_value = None
         if overrides:
-            if hasattr(self._brain, "update_parameters"):
-                try:
-                    self._brain.update_parameters(dict(overrides))
-                except Exception:
-                    logger.debug(
-                        "BrainSimulationSystem.update_parameters failed.",
-                        exc_info=True,
-                    )
-            return
-        if runtime_config is not None and hasattr(self._brain, "update_parameters"):
+            if "dt" in overrides:
+                dt_value = overrides.get("dt")
+            elif "timestep_ms" in overrides:
+                dt_value = overrides.get("timestep_ms")
+            else:
+                sim_cfg = overrides.get("simulation")
+                if isinstance(sim_cfg, Mapping) and "dt" in sim_cfg:
+                    dt_value = sim_cfg.get("dt")
+        if dt_value is None and runtime_config is not None:
+            if isinstance(runtime_config, Mapping):
+                if "dt" in runtime_config:
+                    dt_value = runtime_config.get("dt")
+                elif "timestep_ms" in runtime_config:
+                    dt_value = runtime_config.get("timestep_ms")
+                else:
+                    sim_cfg = runtime_config.get("simulation")
+                    if isinstance(sim_cfg, Mapping) and "dt" in sim_cfg:
+                        dt_value = sim_cfg.get("dt")
+            else:
+                dt_value = getattr(runtime_config, "timestep_ms", None)
+                if dt_value is None:
+                    dt_value = getattr(runtime_config, "dt", None)
+
+        updated_dt = None
+        if dt_value is not None:
             try:
-                self._brain.update_parameters({"runtime": runtime_config})
+                parsed = float(dt_value)
             except Exception:
-                logger.debug(
-                    "BrainSimulationSystem.update_parameters failed.", exc_info=True
-                )
+                parsed = None
+            if parsed is not None and parsed > 0:
+                updated_dt = max(parsed, 1e-3)
+
+        if updated_dt is not None and updated_dt != self._dt:
+            self._dt = float(updated_dt)
+            self._metadata["dt"] = self._dt
+            if getattr(self._brain, "is_running", False):
+                stop = getattr(self._brain, "stop_continuous_simulation", None)
+                start = getattr(self._brain, "start_continuous_simulation", None)
+                if callable(stop) and callable(start):
+                    try:
+                        stop()
+                        start(self._dt)
+                    except Exception:
+                        logger.debug(
+                            "BrainSimulationSystem continuous loop restart failed.",
+                            exc_info=True,
+                        )
+
+        update_parameters = getattr(self._brain, "update_parameters", None)
+        if not callable(update_parameters):
+            return
+
+        updates: Dict[str, Any] = {}
+        if overrides:
+            updates.update(dict(overrides))
+        if runtime_config is not None:
+            updates["runtime"] = runtime_config
+
+        if updated_dt is not None:
+            sim_cfg = updates.get("simulation")
+            if isinstance(sim_cfg, MutableMapping):
+                sim_cfg.setdefault("dt", float(updated_dt))
+            elif sim_cfg is None:
+                updates["simulation"] = {"dt": float(updated_dt)}
+
+        if not updates:
+            return
+        try:
+            update_parameters(updates)
+        except Exception:
+            logger.debug(
+                "BrainSimulationSystem.update_parameters failed.",
+                exc_info=True,
+            )
 
     def __getattr__(self, item: str) -> Any:
         """Expose selected attributes of the wrapped simulation (best effort)."""

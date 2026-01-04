@@ -15,11 +15,17 @@ if str(ROOT) not in sys.path:
 BACKEND_MONITORING = ROOT / "backend" / "monitoring"
 BACKEND_EXECUTION = ROOT / "backend" / "execution"
 
+_IMPORT_STUBS: Dict[str, ModuleType] = {}
+
 
 def _load_monitoring_module(name: str):
+    module_name = f"backend.monitoring.{name}"
+    existing = sys.modules.get(module_name)
+    if existing is not None:
+        return existing
     module_path = BACKEND_MONITORING / f"{name}.py"
     spec = importlib.util.spec_from_file_location(
-        f"backend.monitoring.{name}", module_path
+        module_name, module_path
     )
     module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
@@ -34,18 +40,38 @@ if "backend.execution" not in sys.modules:
     execution_pkg = ModuleType("backend.execution")
     execution_pkg.__path__ = [str(BACKEND_EXECUTION)]  # type: ignore[attr-defined]
     sys.modules["backend.execution"] = execution_pkg
+    _IMPORT_STUBS["backend.execution"] = execution_pkg
 
 
 def _stub_module(name: str, **attrs: Any) -> None:
+    if name in sys.modules:
+        return
     module = ModuleType(name)
     for attr, value in attrs.items():
         setattr(module, attr, value)
     sys.modules[name] = module
+    _IMPORT_STUBS[name] = module
 
 
 _stub_module("backend.execution.scheduler", Scheduler=type("Scheduler", (), {}))
 _stub_module("backend.execution.goal_generator", GoalGenerator=type("GoalGenerator", (), {"listener": None}))
-_stub_module("backend.execution.adaptive_controller", AdaptiveResourceController=type("AdaptiveResourceController", (), {"shutdown": lambda self: None}))
+_stub_module(
+    "backend.execution.adaptive_controller",
+    AdaptiveResourceController=type(
+        "AdaptiveResourceController",
+        (),
+        {
+            "__init__": lambda self, *_, **__: None,
+            "shutdown": lambda self: None,
+            "update": lambda self, *_, **__: None,
+            "record_extra_metrics": lambda self, *_, **__: None,
+            "record_module_metric": lambda self, *_, **__: None,
+        },
+    ),
+    HybridArchitectureManager=type("HybridArchitectureManager", (), {"from_runtime": staticmethod(lambda **_: None)}),
+    GAConfig=type("GAConfig", (), {"__init__": lambda self, *_, **__: None}),
+    ModuleAdapter=type("ModuleAdapter", (), {"__init__": lambda self, *_, **__: None}),
+)
 
 class _TaskHandle:  # pragma: no cover - stub
     pass
@@ -94,11 +120,20 @@ _stub_module(
 _stub_module("modules.environment.simulator", GridWorldEnvironment=type("GridWorldEnvironment", (), {}))
 _stub_module(
     "modules.environment.loop",
-    ActionPerceptionLoop=type("ActionPerceptionLoop", (), {"reset_environment": lambda self: None}),
+    ActionPerceptionLoop=type(
+        "ActionPerceptionLoop",
+        (),
+        {
+            "__init__": lambda self, *_, **__: None,
+            "reset_environment": lambda self: None,
+        },
+    ),
 )
 
 if "capability" not in sys.modules:
-    sys.modules["capability"] = ModuleType("capability")
+    capability_stub = ModuleType("capability")
+    sys.modules["capability"] = capability_stub
+    _IMPORT_STUBS["capability"] = capability_stub
 
 if not hasattr(sys.modules["capability"], "refresh_skills_from_directory"):
     sys.modules["capability"].refresh_skills_from_directory = lambda *_, **__: None  # type: ignore[attr-defined]
@@ -112,9 +147,12 @@ if "agent_factory" not in sys.modules:
 
     agent_factory_stub.create_agent_from_blueprint = _create_agent_from_blueprint  # type: ignore[attr-defined]
     sys.modules["agent_factory"] = agent_factory_stub
+    _IMPORT_STUBS["agent_factory"] = agent_factory_stub
 
 if "autogpt" not in sys.modules:
-    sys.modules["autogpt"] = ModuleType("autogpt")
+    autogpt_stub = ModuleType("autogpt")
+    sys.modules["autogpt"] = autogpt_stub
+    _IMPORT_STUBS["autogpt"] = autogpt_stub
 
 if "autogpt.config" not in sys.modules:
     config_stub = ModuleType("autogpt.config")
@@ -126,12 +164,17 @@ if "autogpt.config" not in sys.modules:
     config_stub.Config = _Config  # type: ignore[attr-defined]
     sys.modules["autogpt.config"] = config_stub
     setattr(sys.modules["autogpt"], "config", config_stub)
+    _IMPORT_STUBS["autogpt.config"] = config_stub
 
 if "autogpt.core" not in sys.modules:
-    sys.modules["autogpt.core"] = ModuleType("autogpt.core")
+    core_stub = ModuleType("autogpt.core")
+    sys.modules["autogpt.core"] = core_stub
+    _IMPORT_STUBS["autogpt.core"] = core_stub
 
 if "autogpt.core.resource" not in sys.modules:
-    sys.modules["autogpt.core.resource"] = ModuleType("autogpt.core.resource")
+    resource_stub = ModuleType("autogpt.core.resource")
+    sys.modules["autogpt.core.resource"] = resource_stub
+    _IMPORT_STUBS["autogpt.core.resource"] = resource_stub
 
 if "autogpt.core.resource.model_providers" not in sys.modules:
     model_stub = ModuleType("autogpt.core.resource.model_providers")
@@ -142,9 +185,12 @@ if "autogpt.core.resource.model_providers" not in sys.modules:
     model_stub.ChatModelProvider = _ChatModelProvider  # type: ignore[attr-defined]
     sys.modules["autogpt.core.resource.model_providers"] = model_stub
     setattr(sys.modules["autogpt.core.resource"], "model_providers", model_stub)
+    _IMPORT_STUBS["autogpt.core.resource.model_providers"] = model_stub
 
 if "autogpt.file_storage" not in sys.modules:
-    sys.modules["autogpt.file_storage"] = ModuleType("autogpt.file_storage")
+    fs_stub = ModuleType("autogpt.file_storage")
+    sys.modules["autogpt.file_storage"] = fs_stub
+    _IMPORT_STUBS["autogpt.file_storage"] = fs_stub
 
 if "autogpt.file_storage.base" not in sys.modules:
     storage_stub = ModuleType("autogpt.file_storage.base")
@@ -155,9 +201,12 @@ if "autogpt.file_storage.base" not in sys.modules:
     storage_stub.FileStorage = _FileStorage  # type: ignore[attr-defined]
     sys.modules["autogpt.file_storage.base"] = storage_stub
     setattr(sys.modules["autogpt.file_storage"], "base", storage_stub)
+    _IMPORT_STUBS["autogpt.file_storage.base"] = storage_stub
 
 if "autogpt.agents" not in sys.modules:
-    sys.modules["autogpt.agents"] = ModuleType("autogpt.agents")
+    agents_stub = ModuleType("autogpt.agents")
+    sys.modules["autogpt.agents"] = agents_stub
+    _IMPORT_STUBS["autogpt.agents"] = agents_stub
 
 if "autogpt.agents.agent" not in sys.modules:
     agent_stub = ModuleType("autogpt.agents.agent")
@@ -168,6 +217,7 @@ if "autogpt.agents.agent" not in sys.modules:
     agent_stub.Agent = _Agent  # type: ignore[attr-defined]
     sys.modules["autogpt.agents.agent"] = agent_stub
     setattr(sys.modules["autogpt.agents"], "agent", agent_stub)
+    _IMPORT_STUBS["autogpt.agents.agent"] = agent_stub
 
 if "events" not in sys.modules:
     events_stub = ModuleType("events")
@@ -187,9 +237,12 @@ if "events" not in sys.modules:
     events_stub.subscribe = lambda *_, **__: (lambda: None)
     events_stub.unsubscribe = lambda *_, **__: None
     sys.modules["events"] = events_stub
+    _IMPORT_STUBS["events"] = events_stub
 
 if "org_charter" not in sys.modules:
-    sys.modules["org_charter"] = ModuleType("org_charter")
+    org_stub = ModuleType("org_charter")
+    sys.modules["org_charter"] = org_stub
+    _IMPORT_STUBS["org_charter"] = org_stub
 
 if "org_charter.watchdog" not in sys.modules:
     watchdog_stub = ModuleType("org_charter.watchdog")
@@ -207,6 +260,7 @@ if "org_charter.watchdog" not in sys.modules:
     watchdog_stub.BlueprintWatcher = _DummyWatcher  # type: ignore[attr-defined]
     sys.modules["org_charter.watchdog"] = watchdog_stub
     setattr(sys.modules["org_charter"], "watchdog", watchdog_stub)
+    _IMPORT_STUBS["org_charter.watchdog"] = watchdog_stub
 
 if "psutil" not in sys.modules:
     class _DummyProcess:
@@ -224,6 +278,7 @@ if "psutil" not in sys.modules:
     psutil_stub.NoSuchProcess = Exception  # type: ignore[attr-defined]
     psutil_stub.AccessDenied = Exception  # type: ignore[attr-defined]
     sys.modules["psutil"] = psutil_stub
+    _IMPORT_STUBS["psutil"] = psutil_stub
 
 if "monitoring" not in sys.modules:
     _gw = _global_workspace_module.global_workspace
@@ -237,6 +292,7 @@ if "monitoring" not in sys.modules:
     monitoring_stub.SystemMetricsCollector = _Placeholder  # type: ignore[attr-defined]
     monitoring_stub.global_workspace = _gw  # type: ignore[attr-defined]
     sys.modules["monitoring"] = monitoring_stub
+    _IMPORT_STUBS["monitoring"] = monitoring_stub
 
 if "capability.skill_library" not in sys.modules:
     skill_lib = ModuleType("capability.skill_library")
@@ -285,8 +341,36 @@ if "aiofiles" not in sys.modules:
     aiofiles_stub.open = lambda *_, **__: _DummyContext()
     sys.modules["aiofiles"] = aiofiles_stub
 
+# Stub third_party AutoGPT imports referenced by AgentLifecycleManager.
+if "third_party.autogpt.autogpt.config" not in sys.modules:
+    _stub_module("third_party.autogpt.autogpt.config", Config=object)
+
+if "third_party.autogpt.autogpt.core.resource" not in sys.modules:
+    resource_pkg = ModuleType("third_party.autogpt.autogpt.core.resource")
+    resource_pkg.__path__ = []  # type: ignore[attr-defined]
+    sys.modules["third_party.autogpt.autogpt.core.resource"] = resource_pkg
+
+if "third_party.autogpt.autogpt.core.resource.model_providers" not in sys.modules:
+    _stub_module("third_party.autogpt.autogpt.core.resource.model_providers", ChatModelProvider=object)
+
+if "third_party.autogpt.autogpt.file_storage.base" not in sys.modules:
+    _stub_module("third_party.autogpt.autogpt.file_storage.base", FileStorage=object)
+
+if "third_party.autogpt.autogpt.agents.agent" not in sys.modules:
+    _stub_module("third_party.autogpt.autogpt.agents.agent", Agent=object)
+
 import backend.execution.manager as manager_module
 from backend.monitoring.global_workspace import global_workspace
+
+
+def _cleanup_import_stubs() -> None:
+    # Remove lightweight import-time stubs to avoid cross-test pollution.
+    for name, module in list(_IMPORT_STUBS.items()):
+        if sys.modules.get(name) is module:
+            del sys.modules[name]
+
+
+_cleanup_import_stubs()
 
 
 class DummyEventBus:

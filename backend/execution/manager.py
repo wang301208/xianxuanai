@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import sys
 import threading
 import time
@@ -27,7 +28,7 @@ import gc
 
 from agent_factory import create_agent_from_blueprint
 from events import EventBus
-from monitoring import ResourceScheduler, SystemMetricsCollector, global_workspace
+from backend.monitoring import ResourceScheduler, SystemMetricsCollector, global_workspace
 from common import AutoGPTException, log_and_format_exception
 from org_charter.watchdog import BlueprintWatcher
 from third_party.autogpt.autogpt.config import Config
@@ -60,6 +61,7 @@ from .self_correction_manager import SelfCorrectionManager
 from .self_diagnoser import SelfDiagnoser
 from .automl_manager import AutoMLManager
 from .code_self_repair import CodeSelfRepairManager
+from .task_submission_scheduler import TaskSubmissionScheduler
 try:  # Optional module acquisition (discover -> suggest -> install)
     from .module_acquisition import ModuleAcquisitionManager
 except Exception:  # pragma: no cover - optional dependency
@@ -72,6 +74,14 @@ try:  # Optional module lifecycle manager (track -> prune suggestions)
     from .module_lifecycle_manager import ModuleLifecycleManager
 except Exception:  # pragma: no cover - optional dependency
     ModuleLifecycleManager = None  # type: ignore[assignment]
+try:  # Optional failure-aware recovery manager (reload unstable modules)
+    from .fault_recovery_manager import FaultRecoveryManager
+except Exception:  # pragma: no cover - optional dependency
+    FaultRecoveryManager = None  # type: ignore[assignment]
+try:  # Optional event-driven scheduler control plane
+    from .scheduler_control_manager import SchedulerControlManager
+except Exception:  # pragma: no cover - optional dependency
+    SchedulerControlManager = None  # type: ignore[assignment]
 from .conductor import AgentConductor
 try:  # Optional self-supervised predictor for world-model style forecasting
     from BrainSimulationSystem.learning.self_supervised import (
@@ -91,6 +101,76 @@ except Exception:  # pragma: no cover - optional
     CrossDomainBenchmark = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
+
+
+_CAPABILITY_TAG_RE = re.compile(r"\[(?:capability|capabilities):([^\]]+)\]", re.IGNORECASE)
+_MODULE_TOKEN_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_\\-]*$")
+
+
+def _split_capability_tokens(value: str) -> list[str]:
+    tokens = re.split(r"[,;\s]+", str(value or ""))
+    return [token.strip() for token in tokens if token and token.strip()]
+
+
+def _normalise_module_tokens(value: Any, *, lower: bool) -> list[str]:
+    tokens: list[str] = []
+    if value is None:
+        return tokens
+    if isinstance(value, str):
+        tokens.extend(_split_capability_tokens(value))
+    elif isinstance(value, dict):
+        for entry in value.values():
+            tokens.extend(_normalise_module_tokens(entry, lower=lower))
+    elif isinstance(value, (list, tuple, set)):
+        for entry in value:
+            tokens.extend(_normalise_module_tokens(entry, lower=lower))
+
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for token in tokens:
+        token = token.strip()
+        if not token:
+            continue
+        token = token.lower() if lower else token
+        if not _MODULE_TOKEN_RE.match(token):
+            continue
+        if token in seen:
+            continue
+        cleaned.append(token)
+        seen.add(token)
+    return cleaned
+
+
+def _extract_required_modules_from_plan_event(event: Dict[str, Any]) -> list[str]:
+    required: list[str] = []
+    seen: set[str] = set()
+
+    def _extend(values: list[str]) -> None:
+        for item in values:
+            if item in seen:
+                continue
+            required.append(item)
+            seen.add(item)
+
+    for container in (event, event.get("metadata")):
+        if not isinstance(container, dict):
+            continue
+        _extend(_normalise_module_tokens(container.get("required_modules") or container.get("modules"), lower=False))
+        _extend(_normalise_module_tokens(container.get("required_capabilities") or container.get("capabilities"), lower=True))
+
+    goal = event.get("goal")
+    if isinstance(goal, str):
+        for match in _CAPABILITY_TAG_RE.findall(goal):
+            _extend(_normalise_module_tokens(_split_capability_tokens(match), lower=True))
+    tasks = event.get("tasks")
+    if isinstance(tasks, list):
+        for task in tasks:
+            if not isinstance(task, str):
+                continue
+            for match in _CAPABILITY_TAG_RE.findall(task):
+                _extend(_normalise_module_tokens(_split_capability_tokens(match), lower=True))
+
+    return required
 
 
 class AgentState(Enum):
@@ -196,6 +276,64 @@ class AgentLifecycleManager:
         except Exception:
             pass
         self._task_manager.start()
+        self._task_submitter = TaskSubmissionScheduler(
+            task_manager=self._task_manager,
+            event_bus=self._event_bus,
+        )
+        self._scheduler_control = None
+        try:
+            if SchedulerControlManager is not None:
+                self._scheduler_control = SchedulerControlManager(
+                    event_bus=self._event_bus,
+                    task_manager=self._task_manager,
+                    scheduler=self._scheduler,
+                    logger_=logger,
+                )
+        except Exception:
+            self._scheduler_control = None
+        self._task_manager_env_adapter = None
+        if str(os.getenv("TASK_MANAGER_DYNAMIC_CONCURRENCY", "")).strip().lower() in {"1", "true", "yes", "on"}:
+            try:
+                from modules.environment.environment_adapter import EnvironmentAdapter
+
+                def _apply_env_adjustment(adjustment: Dict[str, Any]) -> None:
+                    try:
+                        concurrency = adjustment.get("concurrency")
+                        if concurrency is None:
+                            return
+                        reason = adjustment.get("reason")
+                        if self._scheduler_control is not None and bool(
+                            getattr(self._scheduler_control, "enabled", True)
+                        ):
+                            try:
+                                self._event_bus.publish(
+                                    "scheduler.control",
+                                    {
+                                        "action": "throttle",
+                                        "device": "cpu",
+                                        "concurrency": int(concurrency),
+                                        "reason": str(reason) if reason else None,
+                                        "source": "environment_adapter",
+                                    },
+                                )
+                                return
+                            except Exception:
+                                pass
+                        self._task_manager.set_device_concurrency_limit(
+                            "cpu",
+                            int(concurrency),
+                            reason=str(reason) if reason else None,
+                            source="environment_adapter",
+                        )
+                    except Exception:
+                        return
+
+                adapter = EnvironmentAdapter.from_env(event_bus=event_bus, apply_callback=_apply_env_adjustment)
+                if adapter is not None:
+                    adapter.start()
+                    self._task_manager_env_adapter = adapter
+            except Exception:
+                logger.debug("Failed to attach EnvironmentAdapter to TaskManager.", exc_info=True)
         self._knowledge_manager = KnowledgeConsolidator()
         self._memory_router = MemoryRouter(self._knowledge_manager)
         self._knowledge_importer = RuntimeKnowledgeImporter()
@@ -510,6 +648,13 @@ class AgentLifecycleManager:
         self._event_bus.subscribe("agent.action.outcome", self._on_action_outcome)
         # Manage capability modules requested at runtime by agents
         self._module_manager = RuntimeModuleManager(event_bus)
+        control = getattr(self, "_scheduler_control", None)
+        attach = getattr(control, "attach_module_manager", None) if control is not None else None
+        if callable(attach):
+            try:
+                attach(self._module_manager)
+            except Exception:
+                pass
         self._module_acquisition = (
             ModuleAcquisitionManager(
                 module_manager=self._module_manager,
@@ -538,6 +683,16 @@ class AgentLifecycleManager:
                 )
         except Exception:
             self._module_lifecycle = None
+        self._fault_recovery = None
+        try:
+            if FaultRecoveryManager is not None:
+                self._fault_recovery = FaultRecoveryManager(
+                    event_bus=self._event_bus,
+                    module_manager=self._module_manager,
+                    logger_=logger,
+                )
+        except Exception:
+            self._fault_recovery = None
         plugin_paths = os.getenv("SKILL_PLUGIN_PATHS")
         if plugin_paths:
             paths = [
@@ -722,6 +877,16 @@ class AgentLifecycleManager:
             return
         goal = event.get("goal") or ""
         tasks = event.get("tasks") or []
+        required_modules = _extract_required_modules_from_plan_event(event)
+        if required_modules:
+            prune = os.getenv("MODULE_MANAGER_PRUNE_ON_PLAN_READY", "").strip().lower() in {"1", "true", "yes", "on"}
+            try:
+                if prune:
+                    self._module_manager.update(required_modules, prune=True)
+                else:
+                    self._module_manager.ensure(required_modules)
+            except Exception:
+                logger.debug("Failed to update capability modules for plan_ready.", exc_info=True)
         domains = self._extract_domains([goal] + tasks if isinstance(tasks, list) else [goal])
         gaps = self._assess_knowledge_gaps(domains)
 
@@ -831,13 +996,13 @@ class AgentLifecycleManager:
         self._record_working_memory(
             {"type": "knowledge_gap", "gaps": list(gaps), "goal": goal, "timestamp": time.time()}
         )
-        if self._module_acquisition is not None:
+        if self._module_acquisition is not None and required_modules:
             try:
                 self._module_acquisition.request_for_tasks(
-                    tasks if isinstance(tasks, list) else [],
+                    required_modules,
                     goal=str(goal or ""),
-                    reason="plan_ready_knowledge_gap",
-                    context={"knowledge_gap_domains": list(gaps)},
+                    reason="plan_ready_requirements",
+                    context={"knowledge_gap_domains": list(gaps), "source": source},
                 )
             except Exception:
                 logger.debug("Module acquisition request failed for plan_ready.", exc_info=True)
@@ -1183,6 +1348,11 @@ class AgentLifecycleManager:
                         snapshot["health_cpu_pct"] = float(cpu_pct)
                     if snapshot:
                         self._performance_monitor.log_snapshot(snapshot)
+                if self._module_lifecycle is not None:
+                    try:
+                        self._module_lifecycle.evaluate()
+                    except Exception:
+                        logger.debug("Module lifecycle evaluation failed", exc_info=True)
             except Exception:
                 logger.debug("Health monitor tick failed", exc_info=True)
 
@@ -1955,10 +2125,32 @@ class AgentLifecycleManager:
                 self._code_self_repair.close()
             except Exception:
                 pass
+        if getattr(self, "_fault_recovery", None) is not None:
+            try:
+                self._fault_recovery.close()
+            except Exception:
+                pass
+        if getattr(self, "_scheduler_control", None) is not None:
+            try:
+                self._scheduler_control.close()
+            except Exception:
+                pass
+        if getattr(self, "_module_lifecycle", None) is not None:
+            try:
+                self._module_lifecycle.close()
+            except Exception:
+                pass
         if self._planning_handle and not self._planning_handle.done():
             self._planning_handle.cancel()
         self._planning_handle = None
         self._planning_inflight.clear()
+        adapter = getattr(self, "_task_manager_env_adapter", None)
+        if adapter is not None and hasattr(adapter, "stop"):
+            try:
+                adapter.stop(timeout=2.0)
+            except Exception:
+                pass
+        self._task_manager_env_adapter = None
         if self._task_manager:
             self._task_manager.shutdown()
         if self._adaptive_controller:
@@ -2132,14 +2324,26 @@ class AgentLifecycleManager:
     def _schedule_planning_task(self) -> None:
         if self._planning_inflight.is_set():
             return
-        handle = self._task_manager.submit(
-            self._background_plan_idle_goal,
-            priority=TaskPriority.HIGH,
-            deadline=time.time() + 10.0,
-            category="planning",
-            name="auto_plan_idle_agents",
-            metadata={"reason": "idle_agents"},
-        )
+        submitter = getattr(self, "_task_submitter", None)
+        submit = getattr(submitter, "submit_task", None) if submitter is not None else None
+        if callable(submit):
+            handle = submit(
+                self._background_plan_idle_goal,
+                priority=TaskPriority.HIGH,
+                deadline=time.time() + 10.0,
+                category="planning",
+                name="auto_plan_idle_agents",
+                metadata={"reason": "idle_agents"},
+            )
+        else:
+            handle = self._task_manager.submit(
+                self._background_plan_idle_goal,
+                priority=TaskPriority.HIGH,
+                deadline=time.time() + 10.0,
+                category="planning",
+                name="auto_plan_idle_agents",
+                metadata={"reason": "idle_agents"},
+            )
         self._planning_handle = handle
         self._planning_inflight.set()
 
@@ -2165,25 +2369,10 @@ class AgentLifecycleManager:
             return
         goal = result.get("goal")
         tasks = result.get("tasks") or []
-        if tasks:
-            try:
-                self._module_manager.update(tasks)
-            except Exception:
-                logger.debug("Failed to update capability modules", exc_info=True)
-            if self._module_acquisition is not None:
-                try:
-                    self._module_acquisition.request_for_tasks(
-                        tasks if isinstance(tasks, list) else [],
-                        goal=str(goal or ""),
-                        reason="planner_tasks",
-                        context={"source": "auto_planning"},
-                    )
-                except Exception:
-                    logger.debug("Module acquisition scheduling failed.", exc_info=True)
         if goal:
             self._event_bus.publish(
                 "planner.plan_ready",
-                {"goal": goal, "tasks": tasks, "source": "auto"},
+                {"goal": goal, "tasks": tasks if isinstance(tasks, list) else [], "source": "auto"},
             )
 
     def _resource_manager(self) -> None:
@@ -2260,56 +2449,56 @@ class AgentLifecycleManager:
                     self._event_bus.publish(
                         "agent.resource", {"agent": name, "action": "throttle"}
                     )
-            if now - data.get("last_active", now) > idle_timeout:
-                if self._states.get(name) == AgentState.RUNNING:
-                    self._set_state(name, AgentState.IDLE)
+                if now - data.get("last_active", now) > idle_timeout:
+                    if self._states.get(name) == AgentState.RUNNING:
+                        self._set_state(name, AgentState.IDLE)
 
-        self._cleanup_sleeping_agents(now)
+            self._cleanup_sleeping_agents(now)
 
-        # If no tasks are queued and agents are idle, generate new goals
-        if self._task_count == 0 and any(
-            state == AgentState.IDLE for state in self._states.values()
-        ):
-            self._schedule_planning_task()
+            # If no tasks are queued and agents are idle, generate new goals
+            if self._task_count == 0 and any(
+                state == AgentState.IDLE for state in self._states.values()
+            ):
+                self._schedule_planning_task()
 
-        # Scale agents based on pending tasks
-        if self._task_count > len(self._agents):
-            self._wake_sleeping_agents(self._task_count - len(self._agents))
-        elif self._task_count < len(self._agents):
-            self._release_idle_agents(len(self._agents) - self._task_count)
-        self._memory_router.review()
-        backlog_level = self._scheduler_backlog + self._manager_backlog
-        avg_cpu = sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0
-        avg_memory = (
-            sum(memory_samples) / len(memory_samples) if memory_samples else 0.0
-        )
-        if self._adaptive_controller:
-            reward_signal = max(0.0, 100.0 - (avg_cpu + avg_memory))
-            self._adaptive_controller.update(
-                avg_cpu,
-                avg_memory,
-                backlog_level,
-                metrics={
-                    "backlog": backlog_level,
-                    "reward": reward_signal,
-                    "avg_cpu": avg_cpu,
-                    "avg_memory": avg_memory,
-                },
+            # Scale agents based on pending tasks
+            if self._task_count > len(self._agents):
+                self._wake_sleeping_agents(self._task_count - len(self._agents))
+            elif self._task_count < len(self._agents):
+                self._release_idle_agents(len(self._agents) - self._task_count)
+            self._memory_router.review()
+            backlog_level = self._scheduler_backlog + self._manager_backlog
+            avg_cpu = sum(cpu_samples) / len(cpu_samples) if cpu_samples else 0.0
+            avg_memory = (
+                sum(memory_samples) / len(memory_samples) if memory_samples else 0.0
             )
-        try:
-            self._event_bus.publish(
-                "learning.tick",
-                {
-                    "avg_cpu": avg_cpu,
-                    "avg_memory": avg_memory,
-                    "backlog": backlog_level,
-                    "time": now,
-                },
-            )
-        except Exception:
-            pass
-        self._maybe_generate_internal_goal(backlog_level)
-        self._evaluate_global_confidence()
+            if self._adaptive_controller:
+                reward_signal = max(0.0, 100.0 - (avg_cpu + avg_memory))
+                self._adaptive_controller.update(
+                    avg_cpu,
+                    avg_memory,
+                    backlog_level,
+                    metrics={
+                        "backlog": backlog_level,
+                        "reward": reward_signal,
+                        "avg_cpu": avg_cpu,
+                        "avg_memory": avg_memory,
+                    },
+                )
+            try:
+                self._event_bus.publish(
+                    "learning.tick",
+                    {
+                        "avg_cpu": avg_cpu,
+                        "avg_memory": avg_memory,
+                        "backlog": backlog_level,
+                        "time": now,
+                    },
+                )
+            except Exception:
+                pass
+            self._maybe_generate_internal_goal(backlog_level)
+            self._evaluate_global_confidence()
 
     def _cleanup_sleeping_agents(self, now: float) -> None:
         for name, state in list(self._states.items()):

@@ -10,7 +10,7 @@ It is intentionally conservative:
 - optional auto-unload can be enabled to reclaim memory from idle modules
 
 It listens to existing runtime events:
-- `module.loaded` / `module.unloaded` / `module.requirements`
+- `module.loaded` / `module.unloaded` / `module.used` / `module.requirements`
 - `resource.adaptation.architecture` (to learn which module flags trend off)
 - `learning.cycle_completed` (evaluation tick)
 
@@ -204,6 +204,7 @@ class ModuleLifecycleManager:
         self._subscriptions: list[Callable[[], None]] = [
             self._bus.subscribe("module.loaded", self._on_module_loaded),
             self._bus.subscribe("module.unloaded", self._on_module_unloaded),
+            self._bus.subscribe("module.used", self._on_module_used),
             self._bus.subscribe("module.requirements", self._on_module_requirements),
             self._bus.subscribe("resource.adaptation.architecture", self._on_architecture_event),
             self._bus.subscribe("learning.cycle_completed", self._on_learning_cycle),
@@ -508,6 +509,16 @@ class ModuleLifecycleManager:
         if loaded_secs is not None:
             stats.total_loaded_secs += float(max(0.0, loaded_secs))
         stats.loaded_since_ts = None
+
+    async def _on_module_used(self, event: Dict[str, Any]) -> None:
+        if not self.enabled or not isinstance(event, Mapping):
+            return
+        name = event.get("module")
+        if not isinstance(name, str):
+            return
+        now = float(event.get("time", time.time()) or time.time())
+        stats = self._ensure(name)
+        stats.last_used_ts = max(float(stats.last_used_ts), now)
 
     async def _on_module_requirements(self, event: Dict[str, Any]) -> None:
         if not self.enabled or not isinstance(event, Mapping):

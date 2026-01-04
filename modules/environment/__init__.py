@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .simulator import BaseEnvironment, GridWorldEnvironment
 from .registry import (
     get_hardware_registry,
     HardwareEnvironmentRegistry,
@@ -25,6 +24,8 @@ from .registry import (
 )
 
 if TYPE_CHECKING:  # pragma: no cover - avoid import-time cycles
+    from .simulator import BaseEnvironment as BaseEnvironment
+    from .simulator import GridWorldEnvironment as GridWorldEnvironment
     from .loop import ActionPerceptionLoop as ActionPerceptionLoop
     from .environment_adapter import EnvironmentAdapter as EnvironmentAdapter
     from .environment_adapter import EnvironmentAdjustment as EnvironmentAdjustment
@@ -32,6 +33,10 @@ if TYPE_CHECKING:  # pragma: no cover - avoid import-time cycles
 
 
 def __getattr__(name: str):  # pragma: no cover - import-time optimisation
+    if name in {"BaseEnvironment", "GridWorldEnvironment"}:
+        from .simulator import BaseEnvironment, GridWorldEnvironment
+
+        return {"BaseEnvironment": BaseEnvironment, "GridWorldEnvironment": GridWorldEnvironment}[name]
     if name == "ActionPerceptionLoop":
         from .loop import ActionPerceptionLoop as loop_cls
 

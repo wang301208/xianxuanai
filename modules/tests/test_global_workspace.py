@@ -2,7 +2,7 @@ import sys, os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.getcwd(), "backend/monitoring")))
 
-from global_workspace import GlobalWorkspace
+from global_workspace import GlobalWorkspace, WorkspaceMessage
 
 
 class DummyModule:
@@ -86,3 +86,26 @@ def test_local_attention_targets_specified_modules() -> None:
     gw.broadcast("a", {"data": 2}, [0.3], strategy="local", targets=["b"])
     assert b.received == [("a", {"data": 2}, [0.3])]
     assert c.received == []
+
+
+def test_publish_message_propagate_uses_importance_as_attention_when_missing() -> None:
+    gw = GlobalWorkspace()
+    receiver = DummyModule()
+    gw.register_module("receiver", receiver)
+    gw.set_attention_threshold(0.2)
+
+    gw.publish_message(
+        WorkspaceMessage(type="test", source="unit", payload={"x": 1}, importance=0.1),
+        propagate=True,
+    )
+    assert receiver.received == []
+
+    gw.publish_message(
+        WorkspaceMessage(type="test", source="unit", payload={"x": 2}, importance=0.6),
+        propagate=True,
+    )
+    assert receiver.received
+    sender, state, attention = receiver.received[-1]
+    assert sender.startswith("blackboard:")
+    assert state.get("payload", {}).get("x") == 2
+    assert attention == [0.6]

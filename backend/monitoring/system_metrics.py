@@ -49,9 +49,13 @@ class SystemMetricsCollector:
                 if psutil is not None:
                     try:
                         proc = psutil.Process(pid)
-                        cpu = proc.cpu_percent(interval=None)
-                        mem = proc.memory_percent()
-                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        cpu_percent = getattr(proc, "cpu_percent", None)
+                        if callable(cpu_percent):
+                            cpu = float(cpu_percent(interval=None))
+                        memory_percent = getattr(proc, "memory_percent", None)
+                        if callable(memory_percent):
+                            mem = float(memory_percent())
+                    except Exception:
                         cpu = 0.0
                         mem = 0.0
                 self._bus.publish(

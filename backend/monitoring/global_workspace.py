@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import math
 import threading
 import heapq
 import time
@@ -38,6 +39,17 @@ def _normalise_tags(tags: Optional[Sequence[str] | str]) -> Tuple[str, ...]:
     if isinstance(tags, (str, bytes)):
         return (str(tags),)
     return tuple(str(tag) for tag in tags if tag is not None)
+
+
+def _safe_activation(value: Any) -> float:
+    try:
+        parsed = float(value)
+    except Exception:
+        return 0.0
+    if not math.isfinite(parsed):
+        return 0.0
+    parsed = abs(parsed)
+    return max(0.0, min(1.0, parsed))
 
 
 @dataclass
@@ -357,6 +369,10 @@ class GlobalWorkspace:
             message.attention = tuple(att_override)
         elif message.attention is not None:
             message.attention = tuple(message.attention)
+        elif propagate:
+            activation = _safe_activation(message.importance)
+            if activation > 0.0:
+                message.attention = (activation,)
 
         with self._lock:
             seq = self._message_seq
@@ -468,8 +484,7 @@ class GlobalWorkspace:
                     return
                 heapq.heappop(self._candidates)
             sender, state, att_list, strategy, targets, k, allow_cross = data
-            recipients = self._deliver_broadcast(sender, state, att_list, strategy, targets, k, allow_cross)
-            self._push_to_all(sender, state, att_list, recipients)
+            self._deliver_broadcast(sender, state, att_list, strategy, targets, k, allow_cross)
 
     def _deliver_broadcast(
         self,
@@ -518,28 +533,6 @@ class GlobalWorkspace:
             self._trigger_cross_attention(sender)
 
         return set(modules.keys())
-
-    def _push_to_all(
-        self,
-        sender: str,
-        state: Any,
-        att_list: Optional[List[float]],
-        already_sent: Set[str],
-    ) -> None:
-        """After broadcast, push the state to all remaining modules."""
-
-        with self._lock:
-            recipients = [n for n in self._modules if n not in already_sent and n != sender]
-            modules = {name: self._modules[name] for name in recipients}
-
-        for module in modules.values():
-            handler = getattr(module, "receive_broadcast", None)
-            if callable(handler):
-                if inspect.iscoroutinefunction(handler):
-                    asyncio.create_task(handler(sender, state, att_list))
-                else:
-                    handler(sender, state, att_list)
-
 
 # Global workspace instance
 

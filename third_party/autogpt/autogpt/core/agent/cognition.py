@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
+import time
 import logging
+from collections import deque
 from dataclasses import asdict
-from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple
 
 from pydantic import Field
 
@@ -31,6 +34,33 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):  # pragma: no cover - defensive
         return default
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return bool(default)
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return int(default)
+    try:
+        return int(float(value))
+    except Exception:
+        return int(default)
+
+
+def _env_float(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return float(default)
+    try:
+        return float(value)
+    except Exception:
+        return float(default)
 
 
 class BrainAdapterConfiguration(SystemConfiguration):
@@ -126,6 +156,17 @@ class SimpleBrainAdapter(Configurable):
             )
         self._last_cycle: BrainCycleResult | None = None
         self._last_remote_job_id: str | None = None
+        self._runtime_failover_enabled = _env_bool("BRAIN_RUNTIME_FAILOVER_ENABLED", True)
+        self._runtime_restart_on_failure = _env_bool("BRAIN_RUNTIME_RESTART_ON_FAILURE", True)
+        self._runtime_failover_threshold = max(1, _env_int("BRAIN_RUNTIME_FAILOVER_THRESHOLD", 3))
+        self._runtime_failover_window_secs = max(0.0, _env_float("BRAIN_RUNTIME_FAILOVER_WINDOW_SECS", 180.0))
+        self._runtime_failover_cooldown_secs = max(0.0, _env_float("BRAIN_RUNTIME_FAILOVER_COOLDOWN_SECS", 900.0))
+        self._runtime_failures: deque[float] = deque(maxlen=64)
+        self._last_failover_ts: float | None = None
+        self._agent_id: str | None = None
+        self._scheduler_control_enabled = _env_bool("BRAIN_SCHEDULER_CONTROL_ENABLED", True)
+        self._control_subscriptions: list[Callable[[], None]] = []
+        self._attach_scheduler_control()
 
     def _process_cycle(
         self,
@@ -135,7 +176,7 @@ class SimpleBrainAdapter(Configurable):
         context: Mapping[str, Any] | None = None,
     ) -> BrainCycleResult:
         if not self._serving_client:
-            return self._brain.process_cycle(dict(input_payload))
+            return self._process_cycle_local(input_payload, callsite=callsite, context=context)
 
         effective_context: Dict[str, Any] = {"callsite": callsite}
         if context:
@@ -153,7 +194,7 @@ class SimpleBrainAdapter(Configurable):
                     "Remote brain serving failed (%s); using local simulation fallback.",
                     exc,
                 )
-                return self._brain.process_cycle(dict(input_payload))
+                return self._process_cycle_local(input_payload, callsite=callsite, context=effective_context)
             raise
 
         if response.job_id:
@@ -180,10 +221,217 @@ class SimpleBrainAdapter(Configurable):
             self._logger.debug(
                 "Falling back to local WholeBrainSimulation due to missing remote result."
             )
-            return self._brain.process_cycle(dict(input_payload))
+            return self._process_cycle_local(input_payload, callsite=callsite, context=effective_context)
         raise BrainServingError(
             f"Remote brain serving completed with status '{response.status}' without a cycle result."
         )
+
+    def _process_cycle_local(
+        self,
+        input_payload: Mapping[str, Any],
+        *,
+        callsite: str,
+        context: Mapping[str, Any] | None = None,
+    ) -> BrainCycleResult:
+        try:
+            return self._brain.process_cycle(dict(input_payload))
+        except Exception as exc:
+            now = time.time()
+            self._record_runtime_failure(now, exc, callsite=callsite, context=context)
+            if not self._runtime_failover_enabled:
+                raise
+
+            if self._runtime_restart_on_failure and self._backend == BrainBackend.BRAIN_SIMULATION:
+                if self._restart_backend(now, exc, callsite=callsite, context=context):
+                    try:
+                        return self._brain.process_cycle(dict(input_payload))
+                    except Exception as retry_exc:
+                        self._record_runtime_failure(
+                            time.time(),
+                            retry_exc,
+                            callsite=f"{callsite}:restart_retry",
+                            context=context,
+                        )
+
+            if self._backend == BrainBackend.BRAIN_SIMULATION and self._should_failover(now):
+                if self._switch_backend(
+                    BrainBackend.WHOLE_BRAIN,
+                    now=now,
+                    reason="runtime_failures",
+                    error=exc,
+                    context=context,
+                ):
+                    return self._brain.process_cycle(dict(input_payload))
+
+            raise
+
+    def _record_runtime_failure(
+        self,
+        now: float,
+        error: Exception,
+        *,
+        callsite: str,
+        context: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._runtime_failures.append(float(now))
+        if self._runtime_failover_window_secs > 0:
+            cutoff = float(now) - float(self._runtime_failover_window_secs)
+            while self._runtime_failures and float(self._runtime_failures[0]) < cutoff:
+                self._runtime_failures.popleft()
+        payload: Dict[str, Any] = {
+            "time": float(now),
+            "backend": self._backend.value,
+            "callsite": str(callsite),
+            "error": repr(error),
+            "failure_count": int(len(self._runtime_failures)),
+        }
+        if context:
+            payload["context"] = {str(k): v for k, v in dict(context).items()}
+        if self._event_bus is not None and hasattr(self._event_bus, "publish"):
+            try:
+                self._event_bus.publish("brain.backend.failure", payload)
+            except Exception:
+                self._logger.debug("Failed to publish brain backend failure event", exc_info=True)
+
+    def _should_failover(self, now: float) -> bool:
+        if self._runtime_failover_threshold <= 0:
+            return False
+        if len(self._runtime_failures) < int(self._runtime_failover_threshold):
+            return False
+        if self._runtime_failover_cooldown_secs <= 0:
+            return True
+        if self._last_failover_ts is None:
+            return True
+        return (float(now) - float(self._last_failover_ts)) >= float(self._runtime_failover_cooldown_secs)
+
+    def _restart_backend(
+        self,
+        now: float,
+        error: Exception,
+        *,
+        callsite: str,
+        context: Mapping[str, Any] | None = None,
+    ) -> bool:
+        if self._backend != BrainBackend.BRAIN_SIMULATION:
+            return False
+        shutdown = getattr(self._brain, "shutdown", None)
+        if callable(shutdown):
+            try:
+                shutdown()
+            except Exception:
+                self._logger.debug("Brain backend shutdown failed during restart.", exc_info=True)
+        try:
+            self._brain = create_brain_backend(
+                self._backend,
+                whole_brain_config=self._configuration.whole_brain,
+                brain_simulation_config=self._configuration.brain_simulation,
+            )
+        except Exception as exc:
+            payload: Dict[str, Any] = {
+                "time": float(now),
+                "backend": self._backend.value,
+                "action": "restart",
+                "status": "failed",
+                "callsite": str(callsite),
+                "error": repr(error),
+                "restart_error": repr(exc),
+            }
+            if context:
+                payload["context"] = {str(k): v for k, v in dict(context).items()}
+            if self._event_bus is not None and hasattr(self._event_bus, "publish"):
+                try:
+                    self._event_bus.publish("brain.backend.restart", payload)
+                except Exception:
+                    self._logger.debug("Failed to publish brain backend restart event", exc_info=True)
+            return False
+
+        payload = {
+            "time": float(now),
+            "backend": self._backend.value,
+            "action": "restart",
+            "status": "ok",
+            "callsite": str(callsite),
+            "error": repr(error),
+        }
+        if context:
+            payload["context"] = {str(k): v for k, v in dict(context).items()}
+        if self._event_bus is not None and hasattr(self._event_bus, "publish"):
+            try:
+                self._event_bus.publish("brain.backend.restart", payload)
+            except Exception:
+                self._logger.debug("Failed to publish brain backend restart event", exc_info=True)
+        return True
+
+    def _switch_backend(
+        self,
+        backend: BrainBackend,
+        *,
+        now: float,
+        reason: str,
+        error: Exception,
+        context: Mapping[str, Any] | None = None,
+    ) -> bool:
+        if backend == self._backend:
+            return True
+        shutdown = getattr(self._brain, "shutdown", None)
+        if callable(shutdown):
+            try:
+                shutdown()
+            except Exception:
+                self._logger.debug("Brain backend shutdown failed during failover.", exc_info=True)
+        try:
+            self._brain = create_brain_backend(
+                backend,
+                whole_brain_config=self._configuration.whole_brain,
+                brain_simulation_config=self._configuration.brain_simulation,
+            )
+        except Exception as exc:
+            payload: Dict[str, Any] = {
+                "time": float(now),
+                "from_backend": self._backend.value,
+                "to_backend": backend.value,
+                "action": "failover",
+                "status": "failed",
+                "reason": str(reason),
+                "error": repr(error),
+                "failover_error": repr(exc),
+            }
+            if context:
+                payload["context"] = {str(k): v for k, v in dict(context).items()}
+            if self._event_bus is not None and hasattr(self._event_bus, "publish"):
+                try:
+                    self._event_bus.publish("brain.backend.failover", payload)
+                except Exception:
+                    self._logger.debug("Failed to publish brain backend failover event", exc_info=True)
+            return False
+
+        previous = self._backend
+        self._backend = backend
+        if hasattr(self._configuration, "backend"):
+            try:
+                setattr(self._configuration, "backend", backend)
+            except Exception:
+                pass
+        self._last_failover_ts = float(now)
+        self._runtime_failures.clear()
+
+        payload = {
+            "time": float(now),
+            "from_backend": previous.value,
+            "to_backend": backend.value,
+            "action": "failover",
+            "status": "ok",
+            "reason": str(reason),
+            "error": repr(error),
+        }
+        if context:
+            payload["context"] = {str(k): v for k, v in dict(context).items()}
+        if self._event_bus is not None and hasattr(self._event_bus, "publish"):
+            try:
+                self._event_bus.publish("brain.backend.failover", payload)
+            except Exception:
+                self._logger.debug("Failed to publish brain backend failover event", exc_info=True)
+        return True
 
     def _register_serving_service(self) -> None:
         if self._serving_service_id or self._serving_config is None:
@@ -243,8 +491,201 @@ class SimpleBrainAdapter(Configurable):
         """Attach an event bus used for telemetry publishing."""
 
         self._event_bus = event_bus
+        self._attach_scheduler_control()
         if self._serving_service_id is None:
             self._register_serving_service()
+
+    # ------------------------------------------------------------------
+    # Scheduler control plane
+    # ------------------------------------------------------------------
+    def close(self) -> None:
+        """Best-effort cleanup for optional event subscriptions."""
+
+        self._detach_scheduler_control()
+
+    def _detach_scheduler_control(self) -> None:
+        subs = list(self._control_subscriptions)
+        self._control_subscriptions.clear()
+        for cancel in subs:
+            try:
+                cancel()
+            except Exception:
+                continue
+
+    def _attach_scheduler_control(self) -> None:
+        self._detach_scheduler_control()
+        if not self._scheduler_control_enabled:
+            return
+        bus = self._event_bus
+        subscribe = getattr(bus, "subscribe", None) if bus is not None else None
+        if not callable(subscribe):
+            return
+        try:
+            self._control_subscriptions.append(subscribe("scheduler.control", self._on_scheduler_control))
+        except Exception:
+            self._logger.debug("Failed to subscribe to scheduler.control for brain adapter.", exc_info=True)
+
+    async def _on_scheduler_control(self, event: Dict[str, Any]) -> None:
+        if not self._scheduler_control_enabled:
+            return
+        if not isinstance(event, Mapping):
+            return
+        action = str(event.get("action") or "").strip().lower()
+        if not action:
+            return
+
+        target = event.get("agent_id")
+        if target is None:
+            target = event.get("agent")
+        if target is not None:
+            if self._agent_id is None:
+                return
+            if str(target) != str(self._agent_id):
+                return
+
+        if action in {"brain.update_config", "brain.config", "brain.update"}:
+            self._apply_brain_update_config(event)
+            return
+
+        if action in {"brain.switch_backend", "brain.set_backend"}:
+            self._apply_brain_switch_backend(event)
+            return
+
+    @staticmethod
+    def _parse_backend_value(value: Any) -> BrainBackend | None:
+        if isinstance(value, BrainBackend):
+            return value
+        if value is None:
+            return None
+        token = str(value).strip()
+        if not token:
+            return None
+        normalised = token.lower()
+        for backend in BrainBackend:
+            if normalised == backend.value:
+                return backend
+        upper = normalised.upper()
+        for backend in BrainBackend:
+            if upper == backend.name:
+                return backend
+        return None
+
+    def _emit_scheduler_status(self, *, trigger: str, action: str, extra: Dict[str, Any] | None = None) -> None:
+        bus = self._event_bus
+        publish = getattr(bus, "publish", None) if bus is not None else None
+        if not callable(publish):
+            return
+        payload: Dict[str, Any] = {
+            "time": float(time.time()),
+            "trigger": str(trigger),
+            "action": str(action),
+            "component": "brain",
+            "backend": self._backend.value,
+        }
+        if self._agent_id is not None:
+            payload["agent_id"] = str(self._agent_id)
+        if extra:
+            payload.update({str(k): v for k, v in dict(extra).items()})
+        try:
+            publish("scheduler.status", payload)
+        except Exception:
+            self._logger.debug("Failed to publish scheduler.status from brain adapter.", exc_info=True)
+
+    def _apply_brain_update_config(self, event: Mapping[str, Any]) -> None:
+        backend_filter = event.get("backend")
+        if backend_filter is not None:
+            expected = self._parse_backend_value(backend_filter)
+            if expected is not None and expected != self._backend:
+                return
+
+        runtime_config = event.get("runtime_config")
+        if runtime_config is None:
+            runtime_config = event.get("config")
+        overrides = event.get("overrides")
+        if overrides is not None and not isinstance(overrides, Mapping):
+            overrides = None
+
+        applied = False
+        update = getattr(self._brain, "update_config", None)
+        if callable(update):
+            try:
+                update(runtime_config, overrides=dict(overrides) if isinstance(overrides, Mapping) else None)
+                applied = True
+            except TypeError:
+                try:
+                    if overrides is not None:
+                        update(overrides=dict(overrides))
+                    else:
+                        update(runtime_config)
+                    applied = True
+                except Exception:
+                    self._logger.debug("Brain backend update_config failed.", exc_info=True)
+            except Exception:
+                self._logger.debug("Brain backend update_config failed.", exc_info=True)
+
+        if overrides is not None and hasattr(self._configuration, "brain_simulation"):
+            cfg = getattr(self._configuration, "brain_simulation", None)
+            current = getattr(cfg, "overrides", None)
+            if isinstance(current, dict):
+                try:
+                    merged = dict(current)
+                    merged.update(dict(overrides))
+                    setattr(cfg, "overrides", merged)
+                except Exception:
+                    pass
+
+        dt_value = None
+        if isinstance(overrides, Mapping):
+            if "timestep_ms" in overrides:
+                dt_value = overrides.get("timestep_ms")
+            elif "dt" in overrides:
+                dt_value = overrides.get("dt")
+        if dt_value is None and isinstance(runtime_config, Mapping):
+            if "timestep_ms" in runtime_config:
+                dt_value = runtime_config.get("timestep_ms")
+            elif "dt" in runtime_config:
+                dt_value = runtime_config.get("dt")
+        if dt_value is not None and hasattr(self._configuration, "brain_simulation"):
+            cfg = getattr(self._configuration, "brain_simulation", None)
+            if cfg is not None and hasattr(cfg, "timestep_ms"):
+                try:
+                    setattr(cfg, "timestep_ms", float(dt_value))
+                except Exception:
+                    pass
+
+        if applied:
+            self._emit_scheduler_status(trigger="brain.update_config", action="brain.update_config")
+
+    def _apply_brain_switch_backend(self, event: Mapping[str, Any]) -> None:
+        backend_value = event.get("backend")
+        if backend_value is None:
+            backend_value = event.get("to_backend")
+        backend = self._parse_backend_value(backend_value)
+        if backend is None:
+            return
+        if backend == self._backend:
+            return
+        now = time.time()
+        reason = str(event.get("reason") or "scheduler_control").strip() or "scheduler_control"
+        source = event.get("source")
+        context = {"source": str(source)} if source else None
+        try:
+            switched = self._switch_backend(
+                backend,
+                now=float(now),
+                reason=reason,
+                error=RuntimeError("scheduler_control"),
+                context=context,
+            )
+        except Exception:
+            self._logger.debug("Brain backend switch failed.", exc_info=True)
+            return
+        if switched:
+            self._emit_scheduler_status(
+                trigger="brain.switch_backend",
+                action="brain.switch_backend",
+                extra={"to_backend": backend.value},
+            )
 
     # ------------------------------------------------------------------
     # Public API
@@ -362,6 +803,7 @@ class SimpleBrainAdapter(Configurable):
     ) -> dict[str, Any]:
         """Prepare structured inputs for :meth:`WholeBrainSimulation.process_cycle`."""
 
+        self._agent_id = agent_name
         state_context = state_context or {}
         ability_list = list(abilities)
 
